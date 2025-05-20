@@ -30,7 +30,7 @@ export default function ProjectCard() {
                     </button>
                 </div>
                 <input
-                    className="bg-blue-800 rounded-md p-2 text-white cursor-pointer"
+                    className="bg-blue-800 hover:bg-blue-600 rounded-md p-2 text-white cursor-pointer"
                     type="button" value={'Ver Proyecto'}
                 />
             </div>
