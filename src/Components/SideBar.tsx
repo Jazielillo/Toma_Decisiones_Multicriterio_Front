@@ -1,11 +1,11 @@
 
 
 import { Sidebar, Menu, MenuItem } from 'react-pro-sidebar';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 
 
-export default function SideBar() {
+export default function SideBar({ children }: { children: ReactNode }) {
 
     const [collapsed, setCollapsed] = useState(false);
 
@@ -27,8 +27,8 @@ export default function SideBar() {
                         button: {
                             color: '#D6E3EE',
                             '&:hover': {
-                                backgroundColor: '#1f2937', // Cambia esto por el color que prefieras
-                                color: '#FFFFFF', // También puedes cambiar el color del texto al hacer hover
+                                backgroundColor: '#1f2937',
+                                color: '#FFFFFF',
                             },
 
                         }
@@ -95,6 +95,11 @@ export default function SideBar() {
                     > Informes </MenuItem>
                 </Menu>
             </Sidebar>
+
+            <main className="p-3 md:p-7 text-gray-200 w-5/6 sm:w-5/6 mx-auto">
+                {children}
+            </main>
+
         </div>
     );
 }
