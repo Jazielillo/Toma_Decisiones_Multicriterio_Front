@@ -2,7 +2,7 @@ import SideBar from "../../Components/SideBar";
 
 export default function Alternatives() {
     return (
-        <SideBar>
+        <>
             <div className="mb-8 flex justify-between items-center">
                 <div>
                     <h1 className="text-4xl font-bold">Alternativas</h1>
@@ -70,6 +70,6 @@ export default function Alternatives() {
                     </div>
                 </div>
             </div>
-        </SideBar>
+        </>
     )
 }

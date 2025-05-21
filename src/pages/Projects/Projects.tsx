@@ -1,10 +1,8 @@
 import ProjectCard from "../../Components/ProjectCard";
-import SideBar from "../../Components/SideBar";
-
 
 export default function Projects() {
     return (
-        <SideBar>
+        <>
             <div className="mb-8 flex justify-between items-center">
                 <div>
                     <h1 className="text-4xl font-bold">Proyectos</h1>
@@ -24,7 +22,6 @@ export default function Projects() {
                 <ProjectCard />
                 <ProjectCard />
             </div>
-
-        </SideBar>
+        </>
     )
 }

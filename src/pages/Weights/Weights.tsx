@@ -17,7 +17,7 @@ export default function Weights() {
     const barWidth = `${weightPercentage}%`;
 
     return (
-        <SideBar>
+        <>
             <div className="mb-8">
                 <h1 className="text-4xl font-bold">Pesos de los Criterios</h1>
                 <p className="font-bold text-gray-400">Proyecto: Proyecto 1 | Escenario: Escenario perron</p>
@@ -85,6 +85,6 @@ export default function Weights() {
                     <span className="text-xl font-bold">{weight}</span>
                 </div>
             </div>
-        </SideBar>
+        </>
     );
 }
