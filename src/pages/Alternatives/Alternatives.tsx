@@ -1,6 +1,14 @@
-import SideBar from "../../Components/SideBar";
+import { useState } from "react";
+import { NewAlternativeModal } from "../../modals/NewAlternativeModal";
 
 export default function Alternatives() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleCreateAlternative = (name: string, description: string) => {
+        console.log('Alternativa creada:', { name, description });
+        // Aquí iría tu lógica para crear el proyecto
+    };
+
     return (
         <>
             <div className="mb-8 flex justify-between items-center">
@@ -8,12 +16,20 @@ export default function Alternatives() {
                     <h1 className="text-4xl font-bold">Alternativas</h1>
                     <p className="font-bold text-gray-400">Proyecto: Proyecto 1 | Escenario: Escenario perron</p>
                 </div>
-                <button className="bg-blue-600 hover:bg-blue-700 rounded-md px-4 py-3 text-white flex items-center gap-2">
+                <button
+                    className="bg-blue-600 hover:bg-blue-700 rounded-md px-4 py-3 text-white flex items-center gap-2"
+                    onClick={() => setIsModalOpen(true)}
+                >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5">
                         <path fillRule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
                     </svg>
                     Nueva Alternativa
                 </button>
+                <NewAlternativeModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onCreate={handleCreateAlternative}
+                />
             </div>
 
             <div className="flex gap-3 mb-6">

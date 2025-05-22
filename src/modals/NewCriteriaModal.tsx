@@ -1,0 +1,125 @@
+import ReactModal from 'react-modal';
+import { useState } from 'react';
+
+interface NewCriteriaModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onCreate: (name: string, description: string, isMaximize: boolean) => void;
+}
+
+export function NewCriteriaModal({ isOpen, onClose, onCreate }: NewCriteriaModalProps) {
+    const [criteriaName, setCriteriaName] = useState('');
+    const [criteriaDescription, setCriteriaDescription] = useState('');
+    const [isMaximize, setIsMaximize] = useState(true);
+
+    const handleCreate = () => {
+        onCreate(criteriaName, criteriaDescription, isMaximize);
+        onClose();
+    };
+
+    return (
+        <ReactModal
+            isOpen={isOpen}
+            onRequestClose={onClose}
+            shouldCloseOnOverlayClick={true}
+            ariaHideApp={false}
+            style={{
+                overlay: {
+                    backgroundColor: 'rgba(2, 6, 18, 0.8)', // #020612 con opacidad
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 1000,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                },
+                content: {
+                    position: 'relative',
+                    inset: 'auto',
+                    background: '#020612',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    padding: '32px',
+                    color: 'white',
+                    maxWidth: '500px',
+                    width: '100%',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
+                }
+            }}
+        >
+            <div className='flex justify-between'>
+                <h2 className="text-2xl font-bold">Añadir Criterio</h2>
+                <div className='cursor-pointer' onClick={onClose}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </div>
+            </div>
+
+            <p className="text-gray-400 mb-6">Añade un nuevo criterio para evaluar las alternativas</p>
+
+            <div className="space-y-6">
+                <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Nombre del Criterio
+                    </label>
+                    <input
+                        type="text"
+                        className="w-full px-4 py-2 bg-[#0A0F1F] border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Ej: Precio"
+                        value={criteriaName}
+                        onChange={(e) => setCriteriaName(e.target.value)}
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Descripción (Opcional)
+                    </label>
+                    <textarea
+                        className="w-full px-4 py-2 bg-[#0A0F1F] border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows={3}
+                        placeholder="Describe este criterio"
+                        value={criteriaDescription}
+                        onChange={(e) => setCriteriaDescription(e.target.value)}
+                    />
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-sm font-medium text-gray-300">¿Maximizar este criterio?</h3>
+                        <p className="text-sm text-gray-500">Valores más altos son mejores (ej: calidad, rendimiento)</p>
+                    </div>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            className={`${isMaximize ? 'bg-blue-600' : 'bg-gray-600'
+                                } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                            onClick={() => setIsMaximize(!isMaximize)}
+                        >
+                            <span
+                                className={`${isMaximize ? 'translate-x-5' : 'translate-x-0'
+                                    } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                            />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                    <button
+                        onClick={onClose}
+                        className="px-6 py-2 text-gray-300 bg-transparent border border-gray-600 rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={handleCreate}
+                        className="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        disabled={!criteriaName.trim()}
+                    >
+                        Añadir
+                    </button>
+                </div>
+            </div>
+        </ReactModal>
+    );
+}

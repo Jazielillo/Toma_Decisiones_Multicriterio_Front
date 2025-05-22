@@ -1,4 +1,15 @@
+import { useState } from "react";
+import { NewCriteriaModal } from "../../modals/NewCriteriaModal";
+
 export default function Criteria() {
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleCreateCriteria = (name: string, description: string, isMaximize: boolean) => {
+        console.log('Criterio Creado:', { name, description, isMaximize });
+        // Aquí iría tu lógica para crear el proyecto
+    };
+
     return (
         <>
             {/* Responsive Header Section */}
@@ -7,12 +18,20 @@ export default function Criteria() {
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Criterios</h1>
                     <p className="font-bold text-gray-400 text-sm md:text-base">Proyecto: Proyecto 1 | Escenario: Escenario perron</p>
                 </div>
-                <button className="bg-blue-800 cursor-pointer hover:bg-blue-700 rounded-md px-3 py-2 md:px-4 md:py-3 text-white flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+                <button
+                    className="bg-blue-800 cursor-pointer hover:bg-blue-700 rounded-md px-3 py-2 md:px-4 md:py-3 text-white flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto mt-3 sm:mt-0"
+                    onClick={() => setIsModalOpen(true)}
+                >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4 md:size-5">
                         <path fillRule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
                     </svg>
                     Nuevo Criterio
                 </button>
+                <NewCriteriaModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onCreate={handleCreateCriteria}
+                />
             </div>
 
             {/* Responsive Navigation Buttons */}
