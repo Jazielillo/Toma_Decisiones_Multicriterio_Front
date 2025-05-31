@@ -6,27 +6,90 @@ import Projects from './pages/Projects/Projects';
 import Scenarios from './pages/Scenarios/Scenarios';
 import ValueMatrix from './pages/ValueMatrix/ValueMatrix';
 import Weights from './pages/Weights/Weights';
-
-
+import Login from './pages/Login/Login';
+import PrivateRoute from './Components/PrivateRoute';
 
 function App() {
-
-
   return (
     <BrowserRouter>
-      <SideBar>
-        <Routes>
-          <Route path="/" element={<Projects />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/scenarios" element={<Scenarios />} />
-          <Route path="/criteria" element={<Criteria />} />
-          <Route path="/alternatives" element={<Alternatives />} />
-          <Route path="/weights" element={<Weights />} />
-          <Route path="/value-matrix" element={<ValueMatrix />} />
-        </Routes>
-      </SideBar>
+      <Routes>
+        {/* Ruta pública */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Rutas protegidas */}
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <SideBar>
+                <Projects />
+              </SideBar>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            <PrivateRoute>
+              <SideBar>
+                <Projects />
+              </SideBar>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/scenarios"
+          element={
+            <PrivateRoute>
+              <SideBar>
+                <Scenarios />
+              </SideBar>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/criteria"
+          element={
+            <PrivateRoute>
+              <SideBar>
+                <Criteria />
+              </SideBar>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/alternatives"
+          element={
+            <PrivateRoute>
+              <SideBar>
+                <Alternatives />
+              </SideBar>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/weights"
+          element={
+            <PrivateRoute>
+              <SideBar>
+                <Weights />
+              </SideBar>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/value-matrix"
+          element={
+            <PrivateRoute>
+              <SideBar>
+                <ValueMatrix />
+              </SideBar>
+            </PrivateRoute>
+          }
+        />
+      </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
