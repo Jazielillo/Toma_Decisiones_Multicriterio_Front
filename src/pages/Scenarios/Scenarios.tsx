@@ -11,7 +11,7 @@ interface ScenariosProps {
     projectName?: string;
 }
 
-export default function Scenarios({ projectName = "Proyecto" }: ScenariosProps) {
+export default function Scenarios({ }: ScenariosProps) {
     const router = useNavigate();
     const currentProjectId = useProjectId(); // Hook personalizado que reacciona a cambios
 

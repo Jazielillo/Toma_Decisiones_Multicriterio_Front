@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { NewAlternativeModal } from "../../modals/NewAlternativeModal";
 import { DeleteConfirmationModal } from "../../modals/DeleteConfirmationModal";
 import { getAlternatives, createAlternative, updateAlternative, deleteAlternative, type Alternative } from "../../api/alternatives";
-import { useProjectId, useScenarioId, getIdScenarioLocalStorage } from "../../helpers";
+import { useProjectId, useScenarioId } from "../../helpers";
 
 export default function Alternatives() {
 
