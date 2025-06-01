@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { CloneProjectModal } from "../modals/CloneProjectModal"
 import { DeleteConfirmationModal } from "../modals/DeleteConfirmationModal";
-import { cloneProject } from "../api/projects"; // Importa la función de clonado
+import { cloneProject } from "../api/projects";
+import { toast } from "react-toastify";
 
 interface Project {
     title: string;
@@ -77,10 +78,24 @@ export default function ProjectCard({
         }
     };
 
-    const handleViewProject = () => {
-        if (onView) {
-            onView(project);
-        }
+    const handleProjectSelected = (idProject: number) => {
+        //Guardar el idProject en el localStorage
+        localStorage.setItem('id_project_selected', String(idProject));
+
+        //Eliminar el idScenario del localStorage
+        localStorage.removeItem('id_scenario_selected');
+
+        //Mostrar Alerta
+        toast.success(`Proyecto seleccionado: ${project.title}`, {
+            position: "bottom-right",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colorful",
+        });
     };
 
     // Formatear fecha
@@ -111,7 +126,7 @@ export default function ProjectCard({
                 <p>Creado: {formatDate(project.created_at)}</p>
             </div>
 
-            <div className="flex justify-between mt-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between mt-6 gap-4">
                 <div className="flex gap-3">
                     <button
                         className="bg-transparent cursor-pointer rounded-md border p-2 text-white flex items-center gap-2"
@@ -150,12 +165,16 @@ export default function ProjectCard({
                         )}
                     </button>
                 </div>
-                <input
+                <button
                     className="bg-blue-800 hover:bg-blue-600 rounded-md p-2 text-white cursor-pointer"
-                    type="button"
-                    value={'Ver Proyecto'}
-                    onClick={handleViewProject}
-                />
+                    onClick={() => handleProjectSelected(project.id)}
+                    onMouseDown={(e) => e.preventDefault()}
+                >
+                    <div className="flex flex-col">
+                        <span>Seleccionar</span>
+                        <span>Proyecto</span>
+                    </div>
+                </button>
             </div>
             <CloneProjectModal
                 isOpen={isModalOpen}
@@ -169,7 +188,7 @@ export default function ProjectCard({
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleDeleteProject}
                 title={`Eliminar "${project.title}"`}
-            />
+                itemName={project.title} />
         </div>
     )
 }

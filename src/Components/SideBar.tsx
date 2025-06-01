@@ -10,6 +10,13 @@ export default function SideBar({ children }: { children: ReactNode }) {
     const handleLogout = () => {
         // Eliminar el access_token del localStorage
         localStorage.removeItem('access_token');
+
+        // Eliminar el idProject del localStorage
+        localStorage.removeItem('id_project_selected');
+
+        //Eliminar el idScenario del localStorage
+        localStorage.removeItem('id_scenario_selected');
+
         // Opcional: redirigir a la página de login
         navigate('/login');
     };

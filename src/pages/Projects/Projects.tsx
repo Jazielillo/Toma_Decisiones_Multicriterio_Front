@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import ProjectCard from "../../Components/ProjectCard";
 import { NewProjectModal } from "../../modals/NewProjectModal";
+import { toast } from "react-toastify";
 import {
     getProjects,
     createProject,
@@ -89,7 +90,16 @@ export default function Projects() {
                 prevProjects.filter(project => project.id !== projectId)
             );
 
-            console.log('Proyecto eliminado:', projectId);
+            toast.error(`Proyecto Eliminado`, {
+                position: "bottom-right",
+                autoClose: 2000,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colorful",
+            });
         } catch (error) {
             console.error('Error al eliminar proyecto:', error);
             setError('Error al eliminar el proyecto');

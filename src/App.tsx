@@ -8,10 +8,14 @@ import ValueMatrix from './pages/ValueMatrix/ValueMatrix';
 import Weights from './pages/Weights/Weights';
 import Login from './pages/Login/Login';
 import PrivateRoute from './Components/PrivateRoute';
+import { ToastContainer } from 'react-toastify'
 
 function App() {
   return (
     <BrowserRouter>
+      <ToastContainer
+
+      />
       <Routes>
         {/* Ruta pública */}
         <Route path="/login" element={<Login />} />
