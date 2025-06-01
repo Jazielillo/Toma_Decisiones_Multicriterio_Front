@@ -1,7 +1,7 @@
 // src/api/projects.ts
 import axios from 'axios';
 import { BASE_URL } from '../config/api';
-import { getAuthHeader } from '../helpers/get_auth_header';
+import { getAuthHeader } from '../helpers';
 
 const API_URL = `${BASE_URL}/api/v1`;
 

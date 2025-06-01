@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import ScenarioCard from "../../Components/ScenarioCard";
 import { NewScenarioModal } from "../../modals/NewScenarioModal";
 import { getScenarios, createScenario, updateScenario, deleteScenario, cloneScenario, type Scenario } from "../../api/scenarios";
-import { useProjectId, setIdScenarioLocalStorage } from "../../helpers/get_auth_header";
+import { useProjectId, setIdScenarioLocalStorage } from "../../helpers";
 
 interface ScenariosProps {
     projectName?: string;

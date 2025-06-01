@@ -1,7 +1,7 @@
 // src/api/scenarios.ts
 import axios from 'axios';
 import { BASE_URL } from '../config/api';
-import { getAuthHeader, getIdProjectLocalStorage } from '../helpers/get_auth_header';
+import { getAuthHeader, getIdProjectLocalStorage } from '../helpers';
 
 const API_URL = `${BASE_URL}/api/v1`;
 
