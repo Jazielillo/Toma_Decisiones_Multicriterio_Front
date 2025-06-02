@@ -22,12 +22,12 @@ export default function SideBar({ children }: { children: ReactNode }) {
     };
 
     return (
-        <div className='flex'>
+        <div className='flex h-screen'>
             <Sidebar
                 collapsed={collapsed}
                 backgroundColor='#020612'
                 rootStyles={{ color: '#D6E3EE' }}
-                className='h-screen'
+                className='h-full'
                 width='14rem'
                 collapsedWidth='5rem'
                 transitionDuration={400}
@@ -143,7 +143,7 @@ export default function SideBar({ children }: { children: ReactNode }) {
                 </div>
             </Sidebar>
 
-            <main className="p-3 md:p-7 text-gray-200 w-5/6 sm:w-5/6 mx-auto">
+            <main className="p-3 md:p-7 text-gray-200 w-5/6 sm:w-5/6 mx-auto h-full overflow-auto">
                 {children}
             </main>
         </div>

@@ -5,5 +5,3 @@ Arreglar Responsividad:
 Añadir Toast:
 -Acciones de Projects
 
-Criterios:
--Editar Criterio

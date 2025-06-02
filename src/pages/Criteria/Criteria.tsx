@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from 'react-toastify';
 import { NewCriteriaModal } from "../../modals/NewCriteriaModal";
 import { DeleteConfirmationModal } from "../../modals/DeleteConfirmationModal";
-import { getCriterios, createCriterio, deleteCriterio, type Criterio } from "../../api/criteria";
+import { getCriterios, createCriterio, updateCriterio, deleteCriterio, type Criterio } from "../../api/criteria";
 import { useScenarioId } from "../../helpers";
 
 export default function Criteria() {
@@ -12,6 +13,7 @@ export default function Criteria() {
     const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [selectedCriterio, setSelectedCriterio] = useState<Criterio | null>(null);
+    const [editingCriterio, setEditingCriterio] = useState<Criterio | null>(null);
     const [error, setError] = useState<string>("");
 
     const scenarioId = useScenarioId();
@@ -34,6 +36,16 @@ export default function Criteria() {
                 console.error('Error al cargar criterios:', error);
                 setError('Error al cargar los criterios');
                 setCriterios([]);
+                toast.error('Error al cargar los criterios', {
+                    position: "bottom-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: false,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "colorful",
+                });
             } finally {
                 setLoading(false);
             }
@@ -67,6 +79,26 @@ export default function Criteria() {
         } catch (error) {
             console.error('Error al crear criterio:', error);
             setError('Error al crear el criterio');
+            throw error; // Re-throw para que el modal maneje el error
+        }
+    };
+
+    const handleUpdateCriteria = async (id: number, name: string, description: string, isMaximize: boolean) => {
+        try {
+            setError("");
+            const updatedCriterio = await updateCriterio(id, {
+                name,
+                description,
+                is_benefit: isMaximize
+            });
+
+            // Actualizar la lista local
+            setCriterios(prev => prev.map(c => c.id === id ? updatedCriterio : c));
+            console.log('Criterio actualizado:', updatedCriterio);
+        } catch (error) {
+            console.error('Error al actualizar criterio:', error);
+            setError('Error al actualizar el criterio');
+            throw error; // Re-throw para que el modal maneje el error
         }
     };
 
@@ -83,9 +115,30 @@ export default function Criteria() {
             setSelectedCriterio(null);
             setIsDeleteModalOpen(false);
             console.log('Criterio eliminado:', selectedCriterio.name);
+
+            toast.success('Criterio eliminado exitosamente', {
+                position: "bottom-right",
+                autoClose: 2000,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colorful",
+            });
         } catch (error) {
             console.error('Error al eliminar criterio:', error);
             setError('Error al eliminar el criterio');
+            toast.error('Error al eliminar el criterio', {
+                position: "bottom-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colorful",
+            });
         } finally {
             setDeleteLoading(false);
         }
@@ -94,6 +147,16 @@ export default function Criteria() {
     const openDeleteModal = (criterio: Criterio) => {
         setSelectedCriterio(criterio);
         setIsDeleteModalOpen(true);
+    };
+
+    const openEditModal = (criterio: Criterio) => {
+        setEditingCriterio(criterio);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingCriterio(null);
     };
 
     const goToScenarios = () => {
@@ -236,7 +299,10 @@ export default function Criteria() {
                                         </p>
                                     </div>
                                     <div className="col-span-2 flex gap-1 md:gap-2">
-                                        <button className="bg-transparent cursor-pointer rounded-md border border-gray-600 p-1 md:p-2 text-white flex items-center gap-1 md:gap-2 hover:bg-gray-800">
+                                        <button
+                                            className="bg-transparent cursor-pointer rounded-md border border-gray-600 p-1 md:p-2 text-white flex items-center gap-1 md:gap-2 hover:bg-gray-800"
+                                            onClick={() => openEditModal(criterio)}
+                                        >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                                 strokeWidth={1.5} stroke="currentColor" className="size-4 md:size-5">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
@@ -261,8 +327,10 @@ export default function Criteria() {
             {/* Modals */}
             <NewCriteriaModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={handleCloseModal}
                 onCreate={handleCreateCriteria}
+                onUpdate={handleUpdateCriteria}
+                editingCriterio={editingCriterio}
             />
             <DeleteConfirmationModal
                 isOpen={isDeleteModalOpen}

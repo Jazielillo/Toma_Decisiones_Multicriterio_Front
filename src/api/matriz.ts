@@ -4,13 +4,32 @@ import { getAuthHeader, getIdScenarioLocalStorage } from '../helpers';
 
 const API_URL = `${BASE_URL}/api/v1`;
 
+export interface Alternativa {
+  id: number;
+  name: string;
+  description: string;
+  escenario_id: number;
+}
+
+export interface Criterio {
+  id: number;
+  name: string;
+  description: string;
+  weight: number;
+  is_benefit: boolean;
+  preference_threshold: number;
+  indifference_threshold: number;
+  veto_threshold: number;
+  escenario_id: number;
+}
+
 // Interfaces
-export interface CeldaMatriz {
+export interface CeldaMatrizExtendida {
   id: number;
   value: number;
-  alternativa_id: number;
-  criterio_id: number;
   escenario_id: number;
+  criterio: Criterio;
+  alternativa: Alternativa;
 }
 
 export interface UpdateCeldaMatriz {
@@ -19,7 +38,7 @@ export interface UpdateCeldaMatriz {
 }
 
 // Obtener la matriz
-export const getMatriz = async (): Promise<CeldaMatriz[]> => {
+export const getMatriz = async (): Promise<CeldaMatrizExtendida[]> => {
   const escenarioId = getIdScenarioLocalStorage();
   if (!escenarioId) throw new Error('No hay escenario seleccionado');
 
@@ -27,18 +46,9 @@ export const getMatriz = async (): Promise<CeldaMatriz[]> => {
   return response.data;
 };
 
-// Crear la matriz por primera vez
-export const crearMatriz = async (): Promise<CeldaMatriz[]> => {
-  const escenarioId = getIdScenarioLocalStorage();
-  if (!escenarioId) throw new Error('No hay escenario seleccionado');
-
-  console.log('escenarioId', escenarioId);
-  const response = await axios.post(`${API_URL}/evaluaciones/matriz/escenario/${escenarioId}`, {}, getAuthHeader());
-  return response.data;
-};
 
 // Reinicializar matriz
-export const reinicializarMatriz = async (): Promise<CeldaMatriz[]> => {
+export const reinicializarMatriz = async (): Promise<CeldaMatrizExtendida[]> => {
   const escenarioId = getIdScenarioLocalStorage();
   if (!escenarioId) throw new Error('No hay escenario seleccionado');
 
@@ -47,7 +57,7 @@ export const reinicializarMatriz = async (): Promise<CeldaMatriz[]> => {
 };
 
 // Completar matriz si hay cambios
-export const completarMatriz = async (): Promise<CeldaMatriz[]> => {
+export const completarMatriz = async (): Promise<CeldaMatrizExtendida[]> => {
   const escenarioId = getIdScenarioLocalStorage();
   if (!escenarioId) throw new Error('No hay escenario seleccionado');
 
@@ -56,7 +66,7 @@ export const completarMatriz = async (): Promise<CeldaMatriz[]> => {
 };
 
 // Actualizar valores de la matriz
-export const actualizarValoresMatriz = async (datos: UpdateCeldaMatriz[]): Promise<CeldaMatriz[]> => {
+export const actualizarValoresMatriz = async (datos: UpdateCeldaMatriz[]): Promise<CeldaMatrizExtendida[]> => {
   const escenarioId = getIdScenarioLocalStorage();
   if (!escenarioId) throw new Error('No hay escenario seleccionado');
 

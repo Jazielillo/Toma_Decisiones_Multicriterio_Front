@@ -1,24 +1,80 @@
 import ReactModal from 'react-modal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import type { Criterio } from '../api/criteria';
 
 interface NewCriteriaModalProps {
     isOpen: boolean;
     onClose: () => void;
     onCreate: (name: string, description: string, isMaximize: boolean) => void;
+    onUpdate?: (id: number, name: string, description: string, isMaximize: boolean) => void;
+    editingCriterio?: Criterio | null;
 }
 
-export function NewCriteriaModal({ isOpen, onClose, onCreate }: NewCriteriaModalProps) {
+export function NewCriteriaModal({
+    isOpen,
+    onClose,
+    onCreate,
+    onUpdate,
+    editingCriterio
+}: NewCriteriaModalProps) {
     const [criteriaName, setCriteriaName] = useState('');
     const [criteriaDescription, setCriteriaDescription] = useState('');
     const [isMaximize, setIsMaximize] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleCreate = async () => {
+    const isEditing = !!editingCriterio;
+
+    // Cargar datos cuando se está editando
+    useEffect(() => {
+        if (editingCriterio) {
+            setCriteriaName(editingCriterio.name);
+            setCriteriaDescription(editingCriterio.description || '');
+            setIsMaximize(editingCriterio.is_benefit);
+        } else {
+            // Reset form cuando no se está editando
+            setCriteriaName('');
+            setCriteriaDescription('');
+            setIsMaximize(true);
+        }
+    }, [editingCriterio]);
+
+    const handleSubmit = async () => {
         if (!criteriaName.trim()) return;
 
         try {
             setIsLoading(true);
-            await onCreate(criteriaName.trim(), criteriaDescription.trim(), isMaximize);
+
+            if (isEditing && editingCriterio && onUpdate) {
+                await onUpdate(
+                    editingCriterio.id,
+                    criteriaName.trim(),
+                    criteriaDescription.trim(),
+                    isMaximize
+                );
+                toast.success('Criterio actualizado exitosamente', {
+                    position: "bottom-right",
+                    autoClose: 2000,
+                    hideProgressBar: false,
+                    closeOnClick: false,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "colorful",
+                });
+            } else {
+                await onCreate(criteriaName.trim(), criteriaDescription.trim(), isMaximize);
+                toast.success('Criterio creado exitosamente', {
+                    position: "bottom-right",
+                    autoClose: 2000,
+                    hideProgressBar: false,
+                    closeOnClick: false,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "colorful",
+                });
+            }
 
             // Reset form
             setCriteriaName('');
@@ -26,7 +82,17 @@ export function NewCriteriaModal({ isOpen, onClose, onCreate }: NewCriteriaModal
             setIsMaximize(true);
             onClose();
         } catch (error) {
-            console.error('Error creating criteria:', error);
+            console.error('Error processing criteria:', error);
+            toast.error(isEditing ? 'Error al actualizar el criterio' : 'Error al crear el criterio', {
+                position: "bottom-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colorful",
+            });
         } finally {
             setIsLoading(false);
         }
@@ -72,7 +138,9 @@ export function NewCriteriaModal({ isOpen, onClose, onCreate }: NewCriteriaModal
             }}
         >
             <div className='flex justify-between'>
-                <h2 className="text-2xl font-bold">Añadir Criterio</h2>
+                <h2 className="text-2xl font-bold">
+                    {isEditing ? 'Editar Criterio' : 'Añadir Criterio'}
+                </h2>
                 <div
                     className={`cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={handleClose}
@@ -83,7 +151,12 @@ export function NewCriteriaModal({ isOpen, onClose, onCreate }: NewCriteriaModal
                 </div>
             </div>
 
-            <p className="text-gray-400 mb-6">Añade un nuevo criterio para evaluar las alternativas</p>
+            <p className="text-gray-400 mb-6">
+                {isEditing
+                    ? 'Modifica los datos del criterio'
+                    : 'Añade un nuevo criterio para evaluar las alternativas'
+                }
+            </p>
 
             <div className="space-y-6">
                 <div>
@@ -157,7 +230,7 @@ export function NewCriteriaModal({ isOpen, onClose, onCreate }: NewCriteriaModal
                         Cancelar
                     </button>
                     <button
-                        onClick={handleCreate}
+                        onClick={handleSubmit}
                         className="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         disabled={!criteriaName.trim() || isLoading}
                     >
@@ -167,7 +240,10 @@ export function NewCriteriaModal({ isOpen, onClose, onCreate }: NewCriteriaModal
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         )}
-                        {isLoading ? 'Creando...' : 'Añadir'}
+                        {isLoading
+                            ? (isEditing ? 'Actualizando...' : 'Creando...')
+                            : (isEditing ? 'Actualizar' : 'Añadir')
+                        }
                     </button>
                 </div>
             </div>

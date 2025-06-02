@@ -1,164 +1,146 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useScenarioId } from "../../helpers/index"; // Asumiendo que tienes este hook
-import {
-    getMatriz,
-    crearMatriz,
-    completarMatriz,
-    actualizarValoresMatriz,
-    calcularElectre,
-    type CeldaMatriz,
-    type UpdateCeldaMatriz,
-    reinicializarMatriz
-} from "../../api/matriz"; // Ajusta la ruta según tu estructura
-
-interface MatrizData {
-    [key: string]: {
-        [key: string]: number | string;
-    };
-}
+import { actualizarValoresMatriz, calcularElectre, completarMatriz, reinicializarMatriz, type CeldaMatrizExtendida, type UpdateCeldaMatriz, type Alternativa, type Criterio } from "../../api/matriz";
+import { getIdScenarioLocalStorage } from "../../helpers";
 
 export default function ValueMatrix() {
-    const navigate = useNavigate();
-    const scenarioId = useScenarioId();
+    const [currentScenarioId, setCurrentScenarioId] = useState<string | null>(null);
+    const [matrizData, setMatrizData] = useState<CeldaMatrizExtendida[]>([]);
+    const [alternativas, setAlternativas] = useState<Alternativa[]>([]);
+    const [criterios, setCriterios] = useState<Criterio[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [electreResults, setElectreResults] = useState<string[]>([]);
+    const [calculatingResults, setCalculatingResults] = useState(false);
+    const [clearingMatrix, setClearingMatrix] = useState(false);
 
-    const [matrizData, setMatrizData] = useState<CeldaMatriz[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [calculating, setCalculating] = useState(false);
-
-    // Estados para manejar la estructura de la matriz
-    const [values, setValues] = useState<MatrizData>({});
-    const [alternativas, setAlternativas] = useState<string[]>([]);
-    const [criterios, setCriterios] = useState<string[]>([]);
-    const [resultadosElectre, setResultadosElectre] = useState<string[]>([]);
-
-    // Cargar matriz cuando cambie el escenario
+    // Load initial data
     useEffect(() => {
+        const scenarioId = getIdScenarioLocalStorage();
+        setCurrentScenarioId(scenarioId);
+
         if (scenarioId) {
-            cargarMatriz();
+            loadMatriz();
         }
-    }, [scenarioId]);
+    }, []);
 
-    const cargarMatriz = async () => {
-        if (!scenarioId) return;
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            // Primero intentamos obtener la matriz existente
-            let matriz = await getMatriz();
-
-            // Si la matriz está vacía, la creamos
-            if (matriz.length === 0) {
-                console.log("Matriz vacía, creando nueva matriz...");
-                matriz = await crearMatriz();
+    // Watch for scenario changes
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const newScenarioId = getIdScenarioLocalStorage();
+            if (newScenarioId !== currentScenarioId) {
+                setCurrentScenarioId(newScenarioId);
+                if (newScenarioId) {
+                    loadMatriz();
+                } else {
+                    // Clear data if no scenario selected
+                    setMatrizData([]);
+                    setAlternativas([]);
+                    setCriterios([]);
+                    setElectreResults([]);
+                }
             }
+        }, 1000);
 
-            // Siempre ejecutamos completarMatriz para asegurar consistencia
-            matriz = await completarMatriz();
+        return () => clearInterval(interval);
+    }, [currentScenarioId]);
 
-            setMatrizData(matriz);
-            procesarDatosMatriz(matriz);
+    const loadMatriz = async () => {
+        try {
+            setLoading(true);
+            const data = await completarMatriz();
+            setMatrizData(data);
 
-        } catch (err) {
-            console.error("Error al cargar la matriz:", err);
+            // Extract unique alternatives and criteria from matrix data
+            const uniqueAlternativas = data.reduce((acc: Alternativa[], current) => {
+                const exists = acc.find(alt => alt.id === current.alternativa.id);
+                if (!exists) {
+                    acc.push(current.alternativa);
+                }
+                return acc;
+            }, []);
+
+            const uniqueCriterios = data.reduce((acc: Criterio[], current) => {
+                const exists = acc.find(crit => crit.id === current.criterio.id);
+                if (!exists) {
+                    acc.push(current.criterio);
+                }
+                return acc;
+            }, []);
+
+            setAlternativas(uniqueAlternativas);
+            setCriterios(uniqueCriterios);
+        } catch (error) {
+            console.error('Error loading matriz:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const procesarDatosMatriz = (matriz: CeldaMatriz[]) => {
-        if (matriz.length === 0) return;
+    // Simplified handleValueChange - only updates local state
+    const handleValueChange = (celdaId: number, newValue: number | string) => {
+        const numericValue = typeof newValue === 'string' ? parseFloat(newValue) || 0 : newValue;
 
-        // Extraer alternativas y criterios únicos
-        const alternativasUnicas = [...new Set(matriz.map(celda => celda.alternativa_id))];
-        const criteriosUnicos = [...new Set(matriz.map(celda => celda.criterio_id))];
-
-        setAlternativas(alternativasUnicas.map(id => `Alternativa ${id}`));
-        setCriterios(criteriosUnicos.map(id => `Criterio ${id}`));
-
-        // Estructurar los valores para el estado local
-        const nuevosValues: MatrizData = {};
-
-        alternativasUnicas.forEach(altId => {
-            nuevosValues[`alternativa${altId}`] = {};
-            criteriosUnicos.forEach(critId => {
-                const celda = matriz.find(c =>
-                    c.alternativa_id === altId && c.criterio_id === critId
-                );
-                nuevosValues[`alternativa${altId}`][`criterio${critId}`] = celda?.value || "";
-            });
-        });
-
-        setValues(nuevosValues);
-    };
-
-    const handleValueChange = async (alternativaKey: string, criterioKey: string, value: number | string) => {
-        // Actualizar estado local inmediatamente para UX responsiva
-        setValues(prev => ({
-            ...prev,
-            [alternativaKey]: {
-                ...prev[alternativaKey],
-                [criterioKey]: value
-            }
-        }));
-
-        // Encontrar la celda correspondiente para actualizar en la API
-        const alternativaId = parseInt(alternativaKey.replace('alternativa', ''));
-        const criterioId = parseInt(criterioKey.replace('criterio', ''));
-
-        const celda = matrizData.find(c =>
-            c.alternativa_id === alternativaId && c.criterio_id === criterioId
+        // Update local state immediately for better UX
+        setMatrizData(prev =>
+            prev.map(celda =>
+                celda.id === celdaId
+                    ? { ...celda, value: numericValue }
+                    : celda
+            )
         );
-
-        if (celda) {
-            try {
-                const updateData: UpdateCeldaMatriz[] = [{
-                    id: celda.id,
-                    value: typeof value === 'string' ? parseFloat(value) || 0 : value
-                }];
-
-                await actualizarValoresMatriz(updateData);
-
-                // Recargar matriz para mantener sincronización
-                const matrizActualizada = await getMatriz();
-                setMatrizData(matrizActualizada);
-
-            } catch (err) {
-                console.error("Error al actualizar valor:", err);
-                // Revertir cambio local en caso de error
-                cargarMatriz();
-            }
-        }
     };
 
     const calculateResults = async () => {
-        setCalculating(true);
         try {
-            const resultados = await calcularElectre();
-            setResultadosElectre(resultados);
-            console.log("Resultados ELECTRE:", resultados);
-        } catch (err) {
-            console.error("Error al calcular resultados:", err);
-            setError("Error al calcular resultados ELECTRE");
+            setCalculatingResults(true);
+            // Limpiar resultados anteriores
+            setElectreResults([]);
+
+            // PRIMERO: Actualizar todos los valores de la matriz en la base de datos
+            const updateData: UpdateCeldaMatriz[] = matrizData.map(celda => ({
+                id: celda.id,
+                value: celda.value
+            }));
+
+            console.log('Actualizando valores de la matriz...');
+            await actualizarValoresMatriz(updateData);
+
+            // SEGUNDO: Después de actualizar, calcular los resultados ELECTRE
+            console.log('Calculando resultados ELECTRE...');
+            const results = await calcularElectre();
+            setElectreResults(results);
+        } catch (error) {
+            console.error('Error calculating ELECTRE results:', error);
         } finally {
-            setCalculating(false);
+            setCalculatingResults(false);
         }
     };
 
-    const clearResults = async () => {
+    const clearMatrix = async () => {
         try {
-            // Reinicializar la matriz
-            const matrizReiniciada = await reinicializarMatriz();
-            setMatrizData(matrizReiniciada);
-            procesarDatosMatriz(matrizReiniciada);
-            setResultadosElectre([]);
-        } catch (err) {
-            console.error("Error al limpiar resultados:", err);
-            setError("Error al limpiar la matriz");
+            setClearingMatrix(true);
+            setElectreResults([]);
+
+            // Usar reinicializarMatriz para limpiar la matriz
+            await reinicializarMatriz();
+
+            // Recargar la matriz después de reinicializarla
+            await loadMatriz();
+        } catch (error) {
+            console.error('Error clearing matrix:', error);
+        } finally {
+            setClearingMatrix(false);
         }
+    };
+
+    // Helper functions to get values by alternative and criteria
+    const getValue = (alternativaId: number, criterioId: number): number => {
+        const celda = matrizData.find(c => c.alternativa.id === alternativaId && c.criterio.id === criterioId);
+        return celda?.value || 0;
+    };
+
+    const getCeldaId = (alternativaId: number, criterioId: number): number => {
+        const celda = matrizData.find(c => c.alternativa.id === alternativaId && c.criterio.id === criterioId);
+        return celda?.id || 0;
     };
 
     if (loading) {
@@ -166,23 +148,43 @@ export default function ValueMatrix() {
             <div className="text-white min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                    <p>Cargando matriz...</p>
+                    <p className="text-gray-400">Cargando matriz...</p>
                 </div>
             </div>
         );
     }
 
-    if (error) {
+    if (!currentScenarioId) {
         return (
             <div className="text-white min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-red-400 mb-4">{error}</p>
-                    <button
-                        onClick={cargarMatriz}
-                        className="bg-blue-600 hover:bg-blue-700 rounded-md px-4 py-2"
-                    >
-                        Reintentar
-                    </button>
+                    <div className="mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-gray-500">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-300 mb-2">No hay escenario seleccionado</h2>
+                    <p className="text-gray-500">Selecciona un escenario para comenzar a evaluar la matriz.</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Validación: debe haber al menos 1 criterio y 1 alternativa
+    if (alternativas.length < 1 || criterios.length < 1) {
+        return (
+            <div className="text-white min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-red-500">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-xl font-semibold text-red-400 mb-2">Configuración incompleta</h2>
+                    <p className="text-gray-400">Debe existir al menos 1 criterio y 1 alternativa</p>
+                    <p className="text-gray-500 text-sm mt-2">
+                        Actualmente hay: {alternativas.length} alternativa(s) y {criterios.length} criterio(s)
+                    </p>
                 </div>
             </div>
         );
@@ -194,25 +196,19 @@ export default function ValueMatrix() {
             <div className="mb-6 md:mb-8">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">Matriz Valuada</h1>
                 <p className="text-gray-400 text-sm md:text-base">
-                    Escenario ID: {scenarioId} | {matrizData.length} celdas cargadas
+                    Escenario: {currentScenarioId ? `ID: ${currentScenarioId}` : 'No seleccionado'}
                 </p>
             </div>
 
             {/* Navigation Buttons */}
             <div className="flex flex-wrap gap-2 md:gap-3 mb-6">
-                <button
-                    onClick={() => navigate('/pesos')}
-                    className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-2 md:px-4 md:py-2 text-white text-sm md:text-base transition-colors flex items-center gap-2"
-                >
+                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-2 md:px-4 md:py-2 text-white text-sm md:text-base transition-colors flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                     </svg>
                     Pesos
                 </button>
-                <button
-                    onClick={() => navigate('/informes')}
-                    className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-2 md:px-4 md:py-2 text-white text-sm md:text-base transition-colors"
-                >
+                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-2 md:px-4 md:py-2 text-white text-sm md:text-base transition-colors">
                     Ir a Informes
                 </button>
             </div>
@@ -233,23 +229,41 @@ export default function ValueMatrix() {
                     </p>
 
                     <div className="space-y-6">
-                        {/* Renderizar alternativas dinámicamente */}
-                        {alternativas.map((alternativa, altIndex) => (
-                            <div key={`alternativa${altIndex + 1}`}>
-                                <h3 className="text-lg font-semibold mb-4 text-gray-200">{alternativa}</h3>
+                        {/* Dynamic Alternatives */}
+                        {alternativas.map((alternativa) => (
+                            <div key={alternativa.id}>
+                                <h3 className="text-lg font-semibold mb-4 text-gray-200">
+                                    {alternativa.name}
+                                    {alternativa.description && (
+                                        <span className="text-sm font-normal text-gray-400 ml-2">
+                                            - {alternativa.description}
+                                        </span>
+                                    )}
+                                </h3>
                                 <div className="space-y-4">
-                                    <div className="flex flex-col gap-4">
-                                        {criterios.map((criterio, critIndex) => (
-                                            <div key={`criterio${critIndex + 1}`} className="flex-1 min-w-0">
+                                    <div className="flex flex-col md:grid-cols-2 gap-4">
+                                        {criterios.map((criterio) => (
+                                            <div key={criterio.id} className="flex-1 min-w-0">
                                                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                                                    {criterio}
+                                                    {criterio.name}
+                                                    <span className="text-xs text-gray-500 ml-1">
+                                                        [{criterio.is_benefit ? 'MAX' : 'MIN'}]
+                                                    </span>
+                                                    {criterio.weight && (
+                                                        <span className="text-xs text-blue-400 ml-1">
+                                                            (Peso: {criterio.weight})
+                                                        </span>
+                                                    )}
                                                 </label>
+                                                {criterio.description && (
+                                                    <p className="text-xs text-gray-500 mb-2">{criterio.description}</p>
+                                                )}
                                                 <input
                                                     type="number"
                                                     className="w-full bg-gray-800 border border-gray-600 rounded-md p-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    value={values[`alternativa${altIndex + 1}`]?.[`criterio${critIndex + 1}`] || ""}
-                                                    onChange={(e) => handleValueChange(`alternativa${altIndex + 1}`, `criterio${critIndex + 1}`, e.target.value)}
-                                                    placeholder={`Ingrese valor para ${criterio.toLowerCase()}`}
+                                                    value={getValue(alternativa.id, criterio.id)}
+                                                    onChange={(e) => handleValueChange(getCeldaId(alternativa.id, criterio.id), e.target.value)}
+                                                    placeholder={`Ingrese valor para ${criterio.name.toLowerCase()}`}
                                                 />
                                             </div>
                                         ))}
@@ -261,17 +275,32 @@ export default function ValueMatrix() {
                         {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-3 pt-4">
                             <button
-                                className="bg-blue-600 hover:bg-blue-700 rounded-md px-6 py-3 text-white font-medium transition-colors flex-1 sm:flex-none disabled:opacity-50"
+                                className="bg-blue-600 hover:bg-blue-700 rounded-md px-6 py-3 text-white font-medium transition-colors flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 onClick={calculateResults}
-                                disabled={calculating}
+                                disabled={calculatingResults}
                             >
-                                {calculating ? "Calculando..." : "Calcular Resultados"}
+                                {calculatingResults ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Calculando...
+                                    </div>
+                                ) : (
+                                    'Calcular Resultados'
+                                )}
                             </button>
                             <button
-                                className="bg-transparent border border-gray-600 hover:bg-gray-800 rounded-md px-6 py-3 text-white font-medium transition-colors flex-1 sm:flex-none"
-                                onClick={clearResults}
+                                className="bg-transparent border border-gray-600 hover:bg-gray-800 rounded-md px-6 py-3 text-white font-medium transition-colors flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={clearMatrix}
+                                disabled={clearingMatrix}
                             >
-                                Limpiar Resultados
+                                {clearingMatrix ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Limpiando...
+                                    </div>
+                                ) : (
+                                    'Limpiar Matriz'
+                                )}
                             </button>
                         </div>
                     </div>
@@ -289,20 +318,23 @@ export default function ValueMatrix() {
                         Clasificación de alternativas según el método ELECTRE III.
                     </p>
 
-                    {/* Results Display */}
-                    {resultadosElectre.length > 0 ? (
+                    {electreResults.length > 0 ? (
                         <div className="space-y-4">
-                            <div className="bg-gray-800 rounded-lg p-4">
-                                <h3 className="text-lg font-semibold mb-3 text-green-400">Ranking de Alternativas</h3>
-                                <div className="space-y-2">
-                                    {resultadosElectre.map((resultado, index) => (
-                                        <div key={index} className="flex items-center justify-between p-2 bg-gray-700 rounded">
-                                            <span className="font-medium">#{index + 1}</span>
-                                            <span>{resultado}</span>
+                            <h3 className="text-lg font-semibold text-green-400 mb-4">Ranking de Alternativas:</h3>
+                            {electreResults.map((result, index) => (
+                                <div key={index} className="bg-gray-800 border border-gray-600 rounded-lg p-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-medium">{index + 1}. {result}</span>
+                                        <div className="flex items-center">
+                                            {index === 0 && (
+                                                <span className="bg-green-600 text-white px-2 py-1 rounded text-sm">
+                                                    Mejor opción
+                                                </span>
+                                            )}
                                         </div>
-                                    ))}
+                                    </div>
                                 </div>
-                            </div>
+                            ))}
                         </div>
                     ) : (
                         /* No Results State */
@@ -319,9 +351,9 @@ export default function ValueMatrix() {
                             <button
                                 className="bg-transparent border border-gray-600 hover:bg-gray-800 rounded-md px-6 py-3 text-white font-medium transition-colors"
                                 onClick={calculateResults}
-                                disabled={calculating}
+                                disabled={calculatingResults}
                             >
-                                {calculating ? "Calculando..." : "Calcular Resultados"}
+                                {calculatingResults ? 'Calculando...' : 'Ver Informe Completo'}
                             </button>
                         </div>
                     )}
