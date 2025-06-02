@@ -266,7 +266,7 @@ export default function WeightsAndThresholds() {
     }
 
     return (
-        <div className="min-h-screen text-white p-8">
+        <div className="min-h-screen text-white">
             <div className="mb-8">
                 <h1 className="text-4xl font-bold">Pesos y Umbrales</h1>
                 <p className="text-gray-400">Proyecto: Selección de Laptop | Escenario: Uso Profesional</p>
