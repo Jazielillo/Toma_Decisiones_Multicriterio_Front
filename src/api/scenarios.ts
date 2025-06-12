@@ -13,6 +13,7 @@ export interface Scenario {
     proyecto_id: number;
     created_at: string;
     updated_at: string;
+    corte?: number; 
 }
 
 export interface CreateScenarioData {
@@ -24,6 +25,7 @@ export interface CreateScenarioData {
 export interface UpdateScenarioData {
     name?: string;
     description?: string;
+    corte?: number;
 }
 
 // Obtener escenarios de un proyecto
@@ -56,12 +58,17 @@ export const deleteScenario = async (scenarioId: number): Promise<void> => {
     await axios.delete(`${API_URL}/escenarios/${scenarioId}`, getAuthHeader());
 };
 
+
+
 // Clonar un escenario
 export const cloneScenario = async (scenarioId: number, newName: string): Promise<Scenario> => {
     const response = await axios.post(
         `${API_URL}/escenarios/${scenarioId}/clonar`,
-        { name: newName },
-        getAuthHeader()
+        {},
+        { 
+            ...getAuthHeader(),
+            params: { nuevo_nombre: newName } // Send as query parameter
+        }
     );
     return response.data;
 };

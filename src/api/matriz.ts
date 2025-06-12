@@ -75,10 +75,18 @@ export const actualizarValoresMatriz = async (datos: UpdateCeldaMatriz[]): Promi
 };
 
 // Calcular resultados ELECTRE
-export const calcularElectre = async (): Promise<string[]> => {
+export const calcularElectreFlujoNeto = async (): Promise<string[]> => {
   const escenarioId = getIdScenarioLocalStorage();
   if (!escenarioId) throw new Error('No hay escenario seleccionado');
 
   const response = await axios.get(`${API_URL}/electre/escenarios/${escenarioId}/resultados_flujo_neto`, getAuthHeader());
+  return response.data;
+};
+
+export const calcularElectreDestilacion = async (): Promise<string[]> => {
+  const escenarioId = getIdScenarioLocalStorage();
+  if (!escenarioId) throw new Error('No hay escenario seleccionado');
+
+  const response = await axios.get(`${API_URL}/electre/escenarios/${escenarioId}/resultados_destilacion`, getAuthHeader());
   return response.data;
 };

@@ -34,10 +34,9 @@ export default function ProjectCard({
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isCloning, setIsCloning] = useState(false);
 
-    const handleCloneProject = async () => {
+    const handleCloneProject = async (newTitle: string) => {
         setIsCloning(true);
         try {
-            const newTitle = `Copia de ${project.title}`;
             const clonedProject = await cloneProject(project.id, newTitle);
 
             console.log('Proyecto clonado exitosamente:', clonedProject);
@@ -181,6 +180,7 @@ export default function ProjectCard({
                 onClose={() => setIsModalOpen(false)}
                 onClone={handleCloneProject}
                 projectName={project.title}
+                
                 isLoading={isCloning}
             />
             <DeleteConfirmationModal

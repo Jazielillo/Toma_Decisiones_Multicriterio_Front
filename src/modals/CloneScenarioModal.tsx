@@ -1,4 +1,5 @@
 import ReactModal from 'react-modal';
+import { useState } from 'react';
 
 interface CloneScenarioModalProps {
     isOpen: boolean;
@@ -12,13 +13,31 @@ export function CloneScenarioModal({
     isOpen,
     onClose,
     onClone,
-    scenarioName,
     isLoading = false
 }: CloneScenarioModalProps) {
-
+    const [scenarioName, setScenarioName] = useState('');
+    const [nameError, setNameError] = useState('');
     const handleClone = () => {
-        const newName = `Copia de ${scenarioName}`;
+        const newName = `${scenarioName}`;
         onClone(newName);
+    };
+        const validateName = (name: string) => {
+        if (!name.trim()) {
+            setNameError('Este campo es requerido');
+            return false;
+        }
+        setNameError('');
+        return true;
+    };
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setScenarioName(value);
+
+        // Limpiar error si el usuario empieza a escribir
+        if (nameError && value.trim()) {
+            setNameError('');
+        }
     };
 
     return (
@@ -65,9 +84,18 @@ export function CloneScenarioModal({
             <div className="space-y-6">
                 <div className="bg-[#0A0F1F] border border-gray-700 rounded-lg p-4">
                     <p className="text-gray-300 text-sm mb-2">El nombre del nuevo escenario será:</p>
-                    <p className="text-white font-medium">
-                        "Copia de {scenarioName}"
-                    </p>
+                    <input
+                        type="text"
+                        className={`w-full px-4 py-2 bg-[#0A0F1F] border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${nameError ? 'border-red-500' : 'border-gray-700'
+                            }`}
+                        placeholder="Ej: Escenario Optimista"
+                        value={scenarioName}
+                        onChange={handleNameChange}
+                        onBlur={() => validateName(scenarioName)}
+                    />
+                    {nameError && (
+                        <p className="text-red-400 text-sm mt-1">{nameError}</p>
+                    )}
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">

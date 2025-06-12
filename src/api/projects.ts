@@ -59,8 +59,11 @@ export const deleteProject = async (projectId: number): Promise<void> => {
 export const cloneProject = async (projectId: number, newTitle: string): Promise<Project> => {
     const response = await axios.post(
         `${API_URL}/proyectos/${projectId}/clonar`, 
-        { title: newTitle }, 
-        getAuthHeader()
+        { },
+        { 
+            ...getAuthHeader(),
+            params: { nuevo_nombre: newTitle } // Send as query parameter
+        }
     );
     return response.data;
 };
