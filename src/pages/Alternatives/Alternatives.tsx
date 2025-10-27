@@ -287,10 +287,14 @@ export default function Alternatives() {
             </div>
 
             <div className="flex gap-3 mb-6">
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-4 py-2 text-white">
+                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-4 py-2 text-white"
+                    onClick={() => router('/criteria')}
+                >
                     Ir a Criterios
                 </button>
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-4 py-2 text-white">
+                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-4 py-2 text-white"
+                    onClick={() => router('/weights')}
+                >
                     Ir a Pesos
                 </button>
             </div>

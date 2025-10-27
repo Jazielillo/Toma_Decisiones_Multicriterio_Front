@@ -39,7 +39,7 @@ const Login = ({ onSwitchToRegister }: { onSwitchToRegister: () => void }) => {
 
         try {
             await loginUser(email, password);
-            window.location.href = '/';
+            window.location.href = '/projects';
         } catch (error: any) {
             setErrors({ general: 'Correo o contraseña incorrectos' });
         }
@@ -116,6 +116,7 @@ const Register = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
 
         try {
             await registerUser({ name, email, password, is_active: true });
+            alert('Usuario registrado correctamente. Favor de iniciar sesión.');
             onSwitchToLogin();
         } catch (error: any) {
             if (error?.response?.status === 400) {

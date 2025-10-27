@@ -231,10 +231,14 @@ export default function Criteria() {
 
             {/* Responsive Navigation Buttons */}
             <div className="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6">
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-1 md:px-4 md:py-2 text-white text-sm md:text-base">
+                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-1 md:px-4 md:py-2 text-white text-sm md:text-base"
+                    onClick={() => router('/alternatives')}
+                >
                     Ir a Alternativas
                 </button>
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-1 md:px-4 md:py-2 text-white text-sm md:text-base">
+                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-1 md:px-4 md:py-2 text-white text-sm md:text-base"
+                    onClick={() => router('/weights')}
+                >
                     Ir a Pesos
                 </button>
             </div>
