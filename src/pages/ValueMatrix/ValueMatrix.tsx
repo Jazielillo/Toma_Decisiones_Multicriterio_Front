@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { actualizarValoresMatriz, calcularElectreFlujoNeto, calcularElectreDestilacion, completarMatriz, reinicializarMatriz, type CeldaMatrizExtendida, type UpdateCeldaMatriz, type Alternativa, type Criterio } from "../../api/matriz";
 import { getIdScenarioLocalStorage } from "../../helpers";
 import { useNavigate } from "react-router-dom";
 
 export default function ValueMatrix() {
     const router = useNavigate();
+    const isInitialized = useRef(false);
     const [currentScenarioId, setCurrentScenarioId] = useState<string | null>(null);
     const [matrizData, setMatrizData] = useState<CeldaMatrizExtendida[]>([]);
     const [alternativas, setAlternativas] = useState<Alternativa[]>([]);
@@ -17,11 +18,14 @@ export default function ValueMatrix() {
     const [showCalculationOptions, setShowCalculationOptions] = useState(false);
     // Load initial data
     useEffect(() => {
-        const scenarioId = getIdScenarioLocalStorage();
-        setCurrentScenarioId(scenarioId);
+        if (!isInitialized.current) {
+            isInitialized.current = true;
+            const scenarioId = getIdScenarioLocalStorage();
+            setCurrentScenarioId(scenarioId);
 
-        if (scenarioId) {
-            loadMatriz();
+            if (scenarioId) {
+                loadMatriz();
+            }
         }
     }, []);
     const goToScenarios = () => {
@@ -53,7 +57,6 @@ export default function ValueMatrix() {
             setLoading(true);
             const data = await completarMatriz();
             setMatrizData(data);
-
             // Extract unique alternatives and criteria from matrix data
             const uniqueAlternativas = data.reduce((acc: Alternativa[], current) => {
                 const exists = acc.find(alt => alt.id === current.alternativa.id);
@@ -96,39 +99,39 @@ export default function ValueMatrix() {
 
 
 
-// Modifica la función calculateResults para usar el modo seleccionado
-const calculateResults = async () => {
-    try {
-        setCalculatingResults(true);
-        // Limpiar resultados anteriores
-        setElectreResults([]);
+    // Modifica la función calculateResults para usar el modo seleccionado
+    const calculateResults = async () => {
+        try {
+            setCalculatingResults(true);
+            // Limpiar resultados anteriores
+            setElectreResults([]);
 
-        // PRIMERO: Actualizar todos los valores de la matriz en la base de datos
-        const updateData: UpdateCeldaMatriz[] = matrizData.map(celda => ({
-            id: celda.id,
-            value: celda.value
-        }));
+            // PRIMERO: Actualizar todos los valores de la matriz en la base de datos
+            const updateData: UpdateCeldaMatriz[] = matrizData.map(celda => ({
+                id: celda.id,
+                value: celda.value
+            }));
 
-        console.log('Actualizando valores de la matriz...');
-        await actualizarValoresMatriz(updateData);
+            console.log('Actualizando valores de la matriz...');
+            await actualizarValoresMatriz(updateData);
 
-        // SEGUNDO: Calcular los resultados ELECTRE según el modo seleccionado
-        console.log(`Calculando resultados ELECTRE por ${calculationMode}...`);
-        let results;
-        if (calculationMode === 'destilacion') {
-            results = await calcularElectreDestilacion();
-        } else {
-            results = await calcularElectreFlujoNeto();
+            // SEGUNDO: Calcular los resultados ELECTRE según el modo seleccionado
+            console.log(`Calculando resultados ELECTRE por ${calculationMode}...`);
+            let results;
+            if (calculationMode === 'destilacion') {
+                results = await calcularElectreDestilacion();
+            } else {
+                results = await calcularElectreFlujoNeto();
+            }
+            setElectreResults(results);
+        } catch (error) {
+            console.error(`Error calculating ELECTRE results by ${calculationMode}:`, error);
+        } finally {
+            setCalculatingResults(false);
         }
-        setElectreResults(results);
-    } catch (error) {
-        console.error(`Error calculating ELECTRE results by ${calculationMode}:`, error);
-    } finally {
-        setCalculatingResults(false);
-    }
-};
+    };
 
-// Reemplaza los botones de acción por esta implementación
+    // Reemplaza los botones de acción por esta implementación
 
     const clearMatrix = async () => {
         try {
@@ -169,7 +172,7 @@ const calculateResults = async () => {
         );
     }
 
-      if (!currentScenarioId) {
+    if (!currentScenarioId) {
         return (
             <div className="flex flex-col items-center justify-center h-96">
                 <div className="text-center">
@@ -328,7 +331,7 @@ const calculateResults = async () => {
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                                     </svg>
                                 </button>
-                                
+
                                 {/* Dropdown menu */}
                                 {showCalculationOptions && (
                                     <div className="absolute z-10 mt-1 w-full bg-gray-900 border border-gray-700 rounded-md shadow-lg">
@@ -357,7 +360,7 @@ const calculateResults = async () => {
                                     </div>
                                 )}
                             </div>
-                            
+
                             <button
                                 className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 rounded-md px-6 py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 onClick={calculateResults}
@@ -378,7 +381,7 @@ const calculateResults = async () => {
                                 )}
                             </button>
                         </div>
-                        
+
                         <button
                             className="bg-transparent border border-gray-600 hover:bg-gray-800 rounded-md px-6 py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             onClick={clearMatrix}
@@ -408,10 +411,10 @@ const calculateResults = async () => {
                             <path fillRule="evenodd" d="M2.25 2.25a.75.75 0 000 1.5H3v10.5a3 3 0 003 3h1.21l-1.172 3.513a.75.75 0 001.424.474l.329-.987h8.418l.33.987a.75.75 0 001.422-.474l-1.17-3.513H18a3 3 0 003-3V3.75h.75a.75.75 0 000-1.5H2.25zm6.04 16.5l.5-1.5h6.42l.5 1.5H8.29zm7.46-12a.75.75 0 00-1.5 0v6a.75.75 0 001.5 0v-6zm-3 2.25a.75.75 0 00-1.5 0v3.75a.75.75 0 001.5 0V9zm-3 2.25a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0v-1.5z" clipRule="evenodd" />
                         </svg>
                         <h2 className="text-xl md:text-2xl font-bold">Resultados ELECTRE III</h2>
-                        </div>
-                        <p className="text-gray-400 text-sm md:text-base mb-6">
-                            Clasificación de alternativas según el método ELECTRE III ({calculationMode === 'destilacion' ? 'Destilación' : 'Flujo Neto'}).
-                        </p>
+                    </div>
+                    <p className="text-gray-400 text-sm md:text-base mb-6">
+                        Clasificación de alternativas según el método ELECTRE III ({calculationMode === 'destilacion' ? 'Destilación' : 'Flujo Neto'}).
+                    </p>
 
                     {electreResults.length > 0 ? (
                         <div className="space-y-4">
