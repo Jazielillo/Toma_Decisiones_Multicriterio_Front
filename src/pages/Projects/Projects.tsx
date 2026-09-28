@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import ProjectCard from "../../Components/ProjectCard";
 import { NewProjectModal } from "../../modals/NewProjectModal";
 import { toast } from "react-toastify";
+import StepNavigation from "../../Components/StepNavigation";
+import { getIdProjectLocalStorage, notifyWorkContextChanged } from "../../helpers";
 import {
     getProjects,
     createProject,
@@ -70,6 +72,9 @@ export default function Projects() {
             );
 
             console.log('Proyecto actualizado:', updatedProject);
+            if (getIdProjectLocalStorage() === String(projectId)) {
+                notifyWorkContextChanged();
+            }
         } catch (error) {
             console.error('Error al actualizar proyecto:', error);
             setError('Error al actualizar el proyecto');
@@ -135,9 +140,9 @@ export default function Projects() {
 
     return (
         <>
-            <div className="mb-8 flex justify-between items-center">
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h1 className="text-4xl font-bold">Proyectos</h1>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Proyectos</h1>
                     <p className="font-bold text-gray-400">Gestiona tus proyectos de toma de decisiones</p>
                 </div>
                 <button
@@ -158,6 +163,8 @@ export default function Projects() {
                     project={editingProject || undefined}
                 />
             </div>
+
+            <StepNavigation />
 
             {/* Mostrar errores si existen */}
             {error && (

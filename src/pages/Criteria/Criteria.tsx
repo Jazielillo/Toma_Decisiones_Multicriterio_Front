@@ -5,6 +5,7 @@ import { NewCriteriaModal } from "../../modals/NewCriteriaModal";
 import { DeleteConfirmationModal } from "../../modals/DeleteConfirmationModal";
 import { getCriterios, createCriterio, updateCriterio, deleteCriterio, type Criterio } from "../../api/criteria";
 import { useScenarioId } from "../../helpers";
+import StepNavigation from "../../Components/StepNavigation";
 
 export default function Criteria() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -208,7 +209,6 @@ export default function Criteria() {
             <div className="mb-4 md:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Criterios</h1>
-                    <p className="font-bold text-gray-400 text-sm md:text-base">Proyecto: Proyecto 1 | Escenario: Escenario perron</p>
                 </div>
                 <button
                     className="bg-blue-800 cursor-pointer hover:bg-blue-700 rounded-md px-3 py-2 md:px-4 md:py-3 text-white flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto mt-3 sm:mt-0 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -230,18 +230,7 @@ export default function Criteria() {
             )}
 
             {/* Responsive Navigation Buttons */}
-            <div className="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6">
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-1 md:px-4 md:py-2 text-white text-sm md:text-base"
-                    onClick={() => router('/alternatives')}
-                >
-                    Ir a Alternativas
-                </button>
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-1 md:px-4 md:py-2 text-white text-sm md:text-base"
-                    onClick={() => router('/weights')}
-                >
-                    Ir a Pesos
-                </button>
-            </div>
+            <StepNavigation className="mb-4 md:mb-6" />
 
             {/* Main Content Area */}
             <div className="border border-gray-600 rounded-lg p-3 md:p-6">

@@ -236,9 +236,9 @@ export default function PublicWeights() {
 
     if (loading) {
         return (
-            <div className="flex bg-gray-900 min-h-screen">
+            <div className="flex flex-col md:flex-row bg-gray-900 min-h-screen">
                 <PublicSidebar />
-                <div className="flex-1 p-8">
+                <div className="flex-1 min-w-0 p-4 md:p-8">
                     <div className="flex justify-center items-center h-64">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
                     </div>
@@ -248,10 +248,10 @@ export default function PublicWeights() {
     }
 
     return (
-        <div className="flex bg-gray-900 min-h-screen">
+        <div className="flex flex-col md:flex-row bg-gray-900 min-h-screen">
             <PublicSidebar />
             
-            <div className="flex-1 p-8 text-white">
+            <div className="flex-1 min-w-0 p-4 md:p-8 text-white">
                 <div className="mb-8">
                     <h1 className="text-4xl font-bold">Pesos y Umbrales</h1>
                     <p className="text-gray-400 mt-2">Configura los pesos y umbrales para el análisis ELECTRE III</p>

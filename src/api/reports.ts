@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { BASE_URL } from '../config/api';
 import { getAuthHeader, getIdProjectLocalStorage } from '../helpers';
+import type { ResultadoRanking } from './matriz';
 
 const API_URL = `${BASE_URL}/api/v1`;
 
@@ -29,7 +30,11 @@ export interface ScenarioReport {
   resultados_electre: {
     flujo_neto: string[];
     destilacion: string[];
+    flujo_neto_detalle: ResultadoRanking[];
+    destilacion_detalle: ResultadoRanking[];
   };
+  // Presente cuando el escenario no tiene datos suficientes para ELECTRE III
+  error?: string;
 }
 
 export interface CriterioReport {

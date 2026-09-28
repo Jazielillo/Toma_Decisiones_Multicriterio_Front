@@ -2,17 +2,18 @@ import { NavLink } from "react-router-dom";
 
 export default function PublicSidebar() {
     return (
-        <div className="w-64 bg-gray-800 border-r border-gray-700 min-h-screen p-6">
-            <div className="mb-8">
+        <div className="w-full md:w-64 shrink-0 bg-gray-800 border-b md:border-b-0 md:border-r border-gray-700 md:min-h-screen p-4 md:p-6">
+            <div className="mb-4 md:mb-8">
                 <h2 className="text-2xl font-bold text-white mb-2">ELECTRE III</h2>
                 <p className="text-gray-400 text-sm">Evaluación Pública</p>
             </div>
 
-            <nav className="space-y-2">
+            {/* En pantallas pequeñas el menú se muestra en una fila con desplazamiento horizontal */}
+            <nav className="flex md:block gap-2 md:space-y-2 overflow-x-auto">
                 <NavLink
                     to="/public/alternatives"
                     className={({ isActive }) =>
-                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${
                             isActive
                                 ? "bg-blue-600 text-white"
                                 : "text-gray-300 hover:bg-gray-700"
@@ -28,7 +29,7 @@ export default function PublicSidebar() {
                 <NavLink
                     to="/public/criteria"
                     className={({ isActive }) =>
-                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${
                             isActive
                                 ? "bg-blue-600 text-white"
                                 : "text-gray-300 hover:bg-gray-700"
@@ -44,7 +45,7 @@ export default function PublicSidebar() {
                 <NavLink
                     to="/public/weights"
                     className={({ isActive }) =>
-                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${
                             isActive
                                 ? "bg-blue-600 text-white"
                                 : "text-gray-300 hover:bg-gray-700"
@@ -60,7 +61,7 @@ export default function PublicSidebar() {
                 <NavLink
                     to="/public/value-matrix"
                     className={({ isActive }) =>
-                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${
                             isActive
                                 ? "bg-blue-600 text-white"
                                 : "text-gray-300 hover:bg-gray-700"
@@ -74,7 +75,7 @@ export default function PublicSidebar() {
                 </NavLink>
             </nav>
 
-            <div className="mt-8 p-4 bg-gray-900 rounded-lg">
+            <div className="hidden md:block mt-8 p-4 bg-gray-900 rounded-lg">
                 <p className="text-xs text-gray-400 mb-2">💡 Información</p>
                 <p className="text-xs text-gray-500">
                     Los datos se guardan localmente en tu navegador usando cookies.

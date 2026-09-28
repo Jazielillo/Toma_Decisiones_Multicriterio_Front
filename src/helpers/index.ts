@@ -157,4 +157,10 @@ export const useScenarioId = () => {
     return scenarioId;
 };
 
-
+/**
+ * Notifica que cambió el nombre del proyecto o escenario seleccionado
+ * (por ejemplo al editarlos) para que el encabezado se actualice.
+ */
+export const notifyWorkContextChanged = (): void => {
+    window.dispatchEvent(new CustomEvent('workContextChanged'));
+};

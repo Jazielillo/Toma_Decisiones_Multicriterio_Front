@@ -3,6 +3,7 @@ import { getCriterios, updateCriterio, type Criterio } from "../../api/criteria"
 import { getScenarios, updateScenario } from "../../api/scenarios";
 import { toast } from 'react-toastify';
 import { useNavigate } from "react-router-dom";
+import StepNavigation from "../../Components/StepNavigation";
 
 type CriterionKey = 'precio' | 'rendimiento';
 type ThresholdType = 'indiferencia' | 'preferencia' | 'veto';
@@ -369,34 +370,16 @@ const loadScenarioData = async () => {
     return (
         <div className="min-h-screen text-white">
             <div className="mb-8">
-                <h1 className="text-4xl font-bold">Pesos y Umbrales</h1>
-                <p className="text-gray-400">Proyecto: Selección de Laptop | Escenario: Uso Profesional</p>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Pesos y Umbrales</h1>
             </div>
 
-            <div className="flex gap-3 mb-6">
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-4 py-2 text-white flex items-center gap-2"
-                    onClick={() => router('/criteria')}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-                    </svg>
-                    Criterios
-                </button>
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-4 py-2 text-white flex items-center gap-2"
-                    onClick={() => router('/value-matrix')}
-                >
-                    Matriz Valuada
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                    </svg>
-                </button>
-            </div>
+            <StepNavigation />
 
             {/* Pestañas */}
-            <div className="flex mb-6 gap-0.5">
+            <div className="flex mb-6 gap-0.5 overflow-x-auto">
                 <button
                     onClick={() => setActiveTab("pesos")}
-                    className={`flex cursor-pointer items-center gap-2 px-6 py-3 rounded-t-lg border-b-2 ${activeTab === "pesos"
+                    className={`flex shrink-0 whitespace-nowrap cursor-pointer items-center gap-2 px-4 md:px-6 py-3 rounded-t-lg border-b-2 ${activeTab === "pesos"
                         ? "bg-gray-800 border-blue-500 text-white"
                         : "bg-gray-900 border-gray-600 text-gray-400 hover:text-white"
                         }`}
@@ -408,7 +391,7 @@ const loadScenarioData = async () => {
                 </button>
                 <button
                     onClick={() => setActiveTab("umbrales")}
-                    className={`flex cursor-pointer items-center gap-2 px-6 py-3 rounded-t-lg border-b-2 ${activeTab === "umbrales"
+                    className={`flex shrink-0 whitespace-nowrap cursor-pointer items-center gap-2 px-4 md:px-6 py-3 rounded-t-lg border-b-2 ${activeTab === "umbrales"
                         ? "bg-gray-800 border-blue-500 text-white"
                         : "bg-gray-900 border-gray-600 text-gray-400 hover:text-white"
                         }`}
@@ -420,7 +403,7 @@ const loadScenarioData = async () => {
                 </button>
                 <button
                     onClick={() => setActiveTab("corte")}
-                    className={`flex cursor-pointer items-center gap-2 px-6 py-3 rounded-t-lg border-b-2 ${activeTab === "corte"
+                    className={`flex shrink-0 whitespace-nowrap cursor-pointer items-center gap-2 px-4 md:px-6 py-3 rounded-t-lg border-b-2 ${activeTab === "corte"
                         ? "bg-gray-800 border-blue-500 text-white"
                         : "bg-gray-900 border-gray-600 text-gray-400 hover:text-white"
                         }`}

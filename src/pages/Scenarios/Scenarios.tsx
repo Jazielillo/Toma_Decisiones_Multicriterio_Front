@@ -5,7 +5,8 @@ import { toast } from 'react-toastify';
 import ScenarioCard from "../../Components/ScenarioCard";
 import { NewScenarioModal } from "../../modals/NewScenarioModal";
 import { getScenarios, createScenario, updateScenario, deleteScenario, cloneScenario, type Scenario } from "../../api/scenarios";
-import { useProjectId, setIdScenarioLocalStorage } from "../../helpers";
+import { useProjectId, setIdScenarioLocalStorage, getIdScenarioLocalStorage, notifyWorkContextChanged } from "../../helpers";
+import StepNavigation from "../../Components/StepNavigation";
 
 interface ScenariosProps {
     projectName?: string;
@@ -106,6 +107,10 @@ export default function Scenarios({ }: ScenariosProps) {
             setScenarios(prev => prev.map(scenario =>
                 scenario.id === scenarioId ? updatedScenario : scenario
             ));
+
+            if (getIdScenarioLocalStorage() === String(scenarioId)) {
+                notifyWorkContextChanged();
+            }
 
             toast.success('Escenario actualizado exitosamente', {
                 position: "bottom-right",
@@ -277,9 +282,9 @@ export default function Scenarios({ }: ScenariosProps) {
 
     return (
         <>
-            <div className="mb-8 flex justify-between items-center">
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h1 className="text-4xl font-bold">Escenarios</h1>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Escenarios</h1>
                     <p className="font-bold text-gray-400">Gestiona tus escenarios</p>
                 </div>
                 <button
@@ -300,6 +305,8 @@ export default function Scenarios({ }: ScenariosProps) {
                     scenario={editingScenario}
                 />
             </div>
+
+            <StepNavigation />
 
             {scenarios.length === 0 ? (
                 <div className="text-center py-12">

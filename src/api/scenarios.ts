@@ -41,6 +41,12 @@ export const getScenarios = async (): Promise<Scenario[]> => {
     return response.data;
 };
 
+// Obtener un escenario por su ID
+export const getScenarioById = async (scenarioId: number): Promise<Scenario> => {
+    const response = await axios.get(`${API_URL}/escenarios/${scenarioId}`, getAuthHeader());
+    return response.data;
+};
+
 // Crear un nuevo escenario
 export const createScenario = async (data: CreateScenarioData): Promise<Scenario> => {
     const response = await axios.post(`${API_URL}/escenarios/`, data, getAuthHeader());

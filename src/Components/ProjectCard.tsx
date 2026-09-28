@@ -3,6 +3,7 @@ import { CloneProjectModal } from "../modals/CloneProjectModal"
 import { DeleteConfirmationModal } from "../modals/DeleteConfirmationModal";
 import { cloneProject } from "../api/projects";
 import { toast } from "react-toastify";
+import { setIdProjectLocalStorage, setIdScenarioLocalStorage } from "../helpers";
 
 interface Project {
     title: string;
@@ -79,10 +80,10 @@ export default function ProjectCard({
 
     const handleProjectSelected = (idProject: number) => {
         //Guardar el idProject en el localStorage
-        localStorage.setItem('id_project_selected', String(idProject));
+        setIdProjectLocalStorage(String(idProject));
 
         //Eliminar el idScenario del localStorage
-        localStorage.removeItem('id_scenario_selected');
+        setIdScenarioLocalStorage(null);
 
         //Mostrar Alerta
         toast.success(`Proyecto seleccionado: ${project.title}`, {

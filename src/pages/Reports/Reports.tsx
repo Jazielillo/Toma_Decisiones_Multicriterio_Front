@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { getProjectReport, type ProjectReport, type ScenarioReport } from "../../api/reports";
+import { getProjectReport, type ProjectReport } from "../../api/reports";
+import StepNavigation from "../../Components/StepNavigation";
+import ElectreRanking, { mejoresAlternativas } from "../../Components/ElectreRanking";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -75,6 +76,14 @@ export default function Reports() {
   }
 
   const activeScenario = reportData.escenarios[activeScenarioIndex];
+  // Resultados con score y posición (los empates comparten posición)
+  const rankingFlujo = activeScenario?.resultados_electre?.flujo_neto_detalle ?? [];
+  const rankingDestilacion = activeScenario?.resultados_electre?.destilacion_detalle ?? [];
+  const mejoresFlujo = mejoresAlternativas(rankingFlujo);
+  const mejoresDestilacion = mejoresAlternativas(rankingDestilacion);
+  const listar = (nombres: string[]) => nombres.join(', ');
+  const mejoresAmbos = mejoresFlujo.filter(alt => mejoresDestilacion.includes(alt));
+  const hayCoincidencia = mejoresAmbos.length > 0;
   
   return (
     <div className="text-white min-h-screen pb-10">
@@ -88,15 +97,7 @@ export default function Reports() {
       
       {/* Navigation Buttons */}
       <div className="flex flex-wrap gap-2 md:gap-3 mb-6">
-        <Link 
-          to="/scenarios"
-          className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-2 md:px-4 md:py-2 text-white text-sm md:text-base transition-colors flex items-center gap-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-          </svg>
-          Volver a Escenarios
-        </Link>
+        <StepNavigation className="" />
 
         <button 
           onClick={loadReport}
@@ -174,8 +175,18 @@ export default function Reports() {
         )}
       </div>
       
+      {/* Escenario sin datos suficientes para ELECTRE III */}
+      {activeScenario?.error && (
+        <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4">
+          <p className="font-medium text-yellow-400">El escenario "{activeScenario.name}" aún no tiene resultados</p>
+          <p className="text-gray-300 text-sm mt-1">
+            Completa sus alternativas, criterios, pesos y la matriz valuada para ver su reporte.
+          </p>
+        </div>
+      )}
+
       {/* Active Scenario Report */}
-      {activeScenario && (
+      {activeScenario && !activeScenario.error && (
         <div className="space-y-8">
           {/* Scenario Header */}
           <div className="border border-gray-600 rounded-lg p-6">
@@ -346,30 +357,7 @@ export default function Reports() {
                 Ranking de alternativas ordenadas según el método de flujo neto.
               </p>
               
-              <div className="space-y-4">
-                {activeScenario.resultados_electre.flujo_neto.map((alternativa, index) => (
-                  <div 
-                    key={index} 
-                    className={`bg-gray-800 border ${
-                      index === 0 ? 'border-green-600' : 'border-gray-600'
-                    } rounded-lg p-4`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="bg-gray-700 w-8 h-8 flex items-center justify-center rounded-full">
-                          {index + 1}
-                        </span>
-                        <span className="font-medium">{alternativa}</span>
-                      </div>
-                      {index === 0 && (
-                        <span className="bg-green-600 text-white px-2 py-1 rounded text-sm">
-                          Mejor opción
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ElectreRanking ranking={rankingFlujo} metodo="flujo" accent="green" />
             </div>
             
             {/* Destilación Results */}
@@ -384,30 +372,7 @@ export default function Reports() {
                 Ranking de alternativas ordenadas según el método de destilación.
               </p>
               
-              <div className="space-y-4">
-                {activeScenario.resultados_electre.destilacion.map((alternativa, index) => (
-                  <div 
-                    key={index} 
-                    className={`bg-gray-800 border ${
-                      index === 0 ? 'border-purple-600' : 'border-gray-600'
-                    } rounded-lg p-4`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="bg-gray-700 w-8 h-8 flex items-center justify-center rounded-full">
-                          {index + 1}
-                        </span>
-                        <span className="font-medium">{alternativa}</span>
-                      </div>
-                      {index === 0 && (
-                        <span className="bg-purple-600 text-white px-2 py-1 rounded text-sm">
-                          Mejor opción
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ElectreRanking ranking={rankingDestilacion} metodo="destilacion" accent="purple" />
             </div>
           </div>
           
@@ -421,7 +386,7 @@ export default function Reports() {
             </div>
             
             {/* Check if both methods yield the same winner */}
-            {activeScenario.resultados_electre.flujo_neto[0] === activeScenario.resultados_electre.destilacion[0] ? (
+            {hayCoincidencia ? (
               <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 mb-6">
                 <div className="flex items-start gap-3">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5">
@@ -431,8 +396,8 @@ export default function Reports() {
                     <p className="font-medium text-green-400">Coincidencia en la mejor alternativa</p>
                     <p className="text-gray-300">
                       Ambos métodos (Flujo Neto y Destilación) coinciden en que 
-                      <span className="font-bold text-white mx-1">{activeScenario.resultados_electre.flujo_neto[0]}</span> 
-                      es la mejor alternativa, lo que fortalece la confianza en los resultados.
+                      <span className="font-bold text-white mx-1">{listar(mejoresAmbos)}</span> 
+                      {mejoresAmbos.length > 1 ? 'son las mejores alternativas' : 'es la mejor alternativa'}, lo que fortalece la confianza en los resultados.
                     </p>
                   </div>
                 </div>
@@ -447,9 +412,9 @@ export default function Reports() {
                     <p className="font-medium text-yellow-400">Discrepancia en resultados</p>
                     <p className="text-gray-300">
                       El método de Flujo Neto selecciona 
-                      <span className="font-bold text-white mx-1">{activeScenario.resultados_electre.flujo_neto[0]}</span> 
+                      <span className="font-bold text-white mx-1">{listar(mejoresFlujo)}</span> 
                       como mejor alternativa, mientras que Destilación selecciona 
-                      <span className="font-bold text-white mx-1">{activeScenario.resultados_electre.destilacion[0]}</span>.
+                      <span className="font-bold text-white mx-1">{listar(mejoresDestilacion)}</span>.
                       Esta discrepancia merece un análisis más detallado.
                     </p>
                   </div>
@@ -458,8 +423,9 @@ export default function Reports() {
             )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-lg font-medium mb-3">Diferencias en el Ranking</h3>
+                <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-800">
@@ -471,12 +437,12 @@ export default function Reports() {
                   </thead>
                   <tbody>
                     {activeScenario.alternativas.map(alternativa => {
-                      const positionFlujo = activeScenario.resultados_electre.flujo_neto.findIndex(
-                        alt => alt === alternativa.name
-                      ) + 1;
-                      const positionDestilacion = activeScenario.resultados_electre.destilacion.findIndex(
-                        alt => alt === alternativa.name
-                      ) + 1;
+                      const positionFlujo = rankingFlujo.find(
+                        r => r.alternativa === alternativa.name
+                      )?.posicion ?? 0;
+                      const positionDestilacion = rankingDestilacion.find(
+                        r => r.alternativa === alternativa.name
+                      )?.posicion ?? 0;
                       const diff = Math.abs(positionFlujo - positionDestilacion);
                       
                       return (
@@ -508,6 +474,7 @@ export default function Reports() {
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
               
               <div>
@@ -519,16 +486,17 @@ export default function Reports() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                       </svg>
                       <p>
-                        {activeScenario.resultados_electre.flujo_neto[0] === activeScenario.resultados_electre.destilacion[0] ? (
+                        {hayCoincidencia ? (
                           <span>
-                            La alternativa <span className="font-bold">{activeScenario.resultados_electre.flujo_neto[0]}</span> es 
-                            claramente superior según ambos métodos, lo que sugiere una recomendación sólida.
+                            {mejoresAmbos.length > 1 ? 'Las alternativas ' : 'La alternativa '}
+                            <span className="font-bold">{listar(mejoresAmbos)}</span>
+                            {mejoresAmbos.length > 1 ? ' son claramente superiores' : ' es claramente superior'} según ambos métodos, lo que sugiere una recomendación sólida.
                           </span>
                         ) : (
                           <span>
                             Considere evaluar más a fondo las alternativas 
-                            <span className="font-bold">{" " + activeScenario.resultados_electre.flujo_neto[0]}</span> y
-                            <span className="font-bold">{" " + activeScenario.resultados_electre.destilacion[0]}</span> ya que 
+                            <span className="font-bold">{" " + listar(mejoresFlujo)}</span> y
+                            <span className="font-bold">{" " + listar(mejoresDestilacion)}</span> ya que 
                             hay discrepancias entre los métodos.
                           </span>
                         )}

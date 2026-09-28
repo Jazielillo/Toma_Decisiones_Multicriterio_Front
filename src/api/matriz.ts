@@ -37,6 +37,14 @@ export interface UpdateCeldaMatriz {
   value: number;
 }
 
+// Resultado de ELECTRE III por alternativa (mayor score es mejor).
+// Las alternativas con el mismo score comparten posición.
+export interface ResultadoRanking {
+  alternativa: string;
+  score: number;
+  posicion: number;
+}
+
 // Obtener la matriz
 export const getMatriz = async (): Promise<CeldaMatrizExtendida[]> => {
   const escenarioId = getIdScenarioLocalStorage();
@@ -74,19 +82,25 @@ export const actualizarValoresMatriz = async (datos: UpdateCeldaMatriz[]): Promi
   return response.data;
 };
 
-// Calcular resultados ELECTRE
-export const calcularElectreFlujoNeto = async (): Promise<string[]> => {
+// Calcular resultados ELECTRE (con score y posición de cada alternativa)
+export const calcularElectreFlujoNeto = async (): Promise<ResultadoRanking[]> => {
   const escenarioId = getIdScenarioLocalStorage();
   if (!escenarioId) throw new Error('No hay escenario seleccionado');
 
-  const response = await axios.get(`${API_URL}/electre/escenarios/${escenarioId}/resultados_flujo_neto`, getAuthHeader());
+  const response = await axios.get(`${API_URL}/electre/escenarios/${escenarioId}/resultados_flujo_neto`, {
+    ...getAuthHeader(),
+    params: { detalle: true },
+  });
   return response.data;
 };
 
-export const calcularElectreDestilacion = async (): Promise<string[]> => {
+export const calcularElectreDestilacion = async (): Promise<ResultadoRanking[]> => {
   const escenarioId = getIdScenarioLocalStorage();
   if (!escenarioId) throw new Error('No hay escenario seleccionado');
 
-  const response = await axios.get(`${API_URL}/electre/escenarios/${escenarioId}/resultados_destilacion`, getAuthHeader());
+  const response = await axios.get(`${API_URL}/electre/escenarios/${escenarioId}/resultados_destilacion`, {
+    ...getAuthHeader(),
+    params: { detalle: true },
+  });
   return response.data;
 };

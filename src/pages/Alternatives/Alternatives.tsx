@@ -5,12 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { NewAlternativeModal } from "../../modals/NewAlternativeModal";
 import { DeleteConfirmationModal } from "../../modals/DeleteConfirmationModal";
 import { getAlternatives, createAlternative, updateAlternative, deleteAlternative, type Alternative } from "../../api/alternatives";
-import { useProjectId, useScenarioId } from "../../helpers";
+import { useScenarioId } from "../../helpers";
+import StepNavigation from "../../Components/StepNavigation";
 
 export default function Alternatives() {
 
     const router = useNavigate();
-    const currentProjectId = useProjectId(); // Hook para proyecto
     const currentScenarioId = useScenarioId(); // Hook para escenario
 
     const [alternatives, setAlternatives] = useState<Alternative[]>([]);
@@ -247,15 +247,9 @@ export default function Alternatives() {
 
     return (
         <>
-            <div className="mb-8 flex justify-between items-center">
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h1 className="text-4xl font-bold">Alternativas</h1>
-                    <p className="font-bold text-gray-400">
-                        {currentProjectId && currentScenarioId ?
-                            `Proyecto: ${currentProjectId} | Escenario: ${currentScenarioId}` :
-                            'Selecciona un proyecto y escenario'
-                        }
-                    </p>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Alternativas</h1>
                 </div>
                 <button
                     className="bg-blue-600 hover:bg-blue-700 rounded-md px-4 py-3 text-white flex items-center gap-2"
@@ -286,18 +280,7 @@ export default function Alternatives() {
                 />
             </div>
 
-            <div className="flex gap-3 mb-6">
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-4 py-2 text-white"
-                    onClick={() => router('/criteria')}
-                >
-                    Ir a Criterios
-                </button>
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-4 py-2 text-white"
-                    onClick={() => router('/weights')}
-                >
-                    Ir a Pesos
-                </button>
-            </div>
+            <StepNavigation />
 
             <div className="border border-gray-600 rounded-lg p-6">
                 <div className="flex items-center gap-3 mb-4">

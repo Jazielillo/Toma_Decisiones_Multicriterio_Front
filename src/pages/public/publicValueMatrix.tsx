@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { toast } from 'react-toastify';
 import PublicSidebar from "./PublicSidebar";
 import { BASE_URL } from "../../config/api";
+import type { ResultadoRanking } from "../../api/matriz";
+import ElectreRanking from "../../Components/ElectreRanking";
 
 interface Alternative {
     id: number;
@@ -186,6 +188,7 @@ const callElectreAPI = async (
         const formData = new FormData();
         formData.append('file', file);
         formData.append('lambda_corte', lambda.toString());
+        formData.append('detalle', 'true');
         
         // Determinar el endpoint según el modo
         const endpoint = mode === 'flujo' 
@@ -220,6 +223,9 @@ export default function PublicValueMatrix() {
     const [matrixValues, setMatrixValues] = useState<MatrixValue[]>([]);
     const [loading, setLoading] = useState(true);
     const [electreResults, setElectreResults] = useState<string[]>([]);
+    // Ranking con score y posición, y método con el que se calculó
+    const [ranking, setRanking] = useState<ResultadoRanking[]>([]);
+    const [resultsMode, setResultsMode] = useState<'destilacion' | 'flujo'>('destilacion');
     const [calculatingResults, setCalculatingResults] = useState(false);
     const [calculationMode, setCalculationMode] = useState<'destilacion' | 'flujo'>('destilacion');
 
@@ -288,6 +294,7 @@ export default function PublicValueMatrix() {
         const clearedMatrix = matrixValues.map(m => ({ ...m, value: 0 }));
         setMatrixValues(clearedMatrix);
         setElectreResults([]);
+        setRanking([]);
         toast.success('Matriz limpiada', {
             position: "bottom-right",
             autoClose: 2000,
@@ -299,6 +306,7 @@ export default function PublicValueMatrix() {
         try {
             setCalculatingResults(true);
             setElectreResults([]);
+            setRanking([]);
 
             // Obtener lambda de las cookies
             const lambdaStr = getCookie('public_lambda');
@@ -316,9 +324,14 @@ export default function PublicValueMatrix() {
             
             console.log('Resultado ELECTRE:', resultado);
 
-            // Formatear resultados
-            const formattedResults = formatElectreResults(resultado, calculationMode);
-            setElectreResults(formattedResults);
+            // Resultados con score por alternativa (los empates comparten posición)
+            if (Array.isArray(resultado) && resultado.every((item: any) => typeof item === 'object' && 'score' in item)) {
+                setRanking(resultado);
+                setResultsMode(calculationMode);
+            } else {
+                const formattedResults = formatElectreResults(resultado, calculationMode);
+                setElectreResults(formattedResults);
+            }
             
             toast.success('Cálculo completado exitosamente', {
                 position: "bottom-right",
@@ -400,9 +413,9 @@ export default function PublicValueMatrix() {
 
     if (loading) {
         return (
-            <div className="flex bg-gray-900 min-h-screen">
+            <div className="flex flex-col md:flex-row bg-gray-900 min-h-screen">
                 <PublicSidebar />
-                <div className="flex-1 p-8">
+                <div className="flex-1 min-w-0 p-4 md:p-8">
                     <div className="flex justify-center items-center h-64">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
                     </div>
@@ -413,9 +426,9 @@ export default function PublicValueMatrix() {
 
     if (alternatives.length === 0 || criteria.length === 0) {
         return (
-            <div className="flex bg-gray-900 min-h-screen">
+            <div className="flex flex-col md:flex-row bg-gray-900 min-h-screen">
                 <PublicSidebar />
-                <div className="flex-1 p-8 text-white">
+                <div className="flex-1 min-w-0 p-4 md:p-8 text-white">
                     <div className="flex items-center justify-center h-96">
                         <div className="text-center">
                             <div className="mb-4">
@@ -438,10 +451,10 @@ export default function PublicValueMatrix() {
     }
 
     return (
-        <div className="flex bg-gray-900 min-h-screen">
+        <div className="flex flex-col md:flex-row bg-gray-900 min-h-screen">
             <PublicSidebar />
             
-            <div className="flex-1 p-8 text-white">
+            <div className="flex-1 min-w-0 p-4 md:p-8 text-white">
                 <div className="mb-6">
                     <h1 className="text-3xl lg:text-4xl font-bold mb-2">Matriz Valuada</h1>
                     <p className="text-gray-400 text-sm md:text-base">
@@ -449,7 +462,8 @@ export default function PublicValueMatrix() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
+                {/* La matriz ocupa todo el ancho y los resultados van debajo */}
+                <div className="flex flex-col gap-6 lg:gap-8">
                     {/* Matriz de Evaluación */}
                     <div className="border border-gray-600 rounded-lg p-4 md:p-6">
                         <div className="flex items-center gap-3 mb-4">
@@ -603,7 +617,17 @@ export default function PublicValueMatrix() {
                             </div>
                         )}
 
-                        {electreResults.length === 0 && (
+                        {ranking.length > 0 && (
+                            <div className="bg-gray-800 rounded-lg p-4">
+                                <h3 className="font-semibold text-lg mb-1 text-green-400">Resultados:</h3>
+                                <p className="text-gray-400 text-sm mb-3">
+                                    Método: {resultsMode === 'destilacion' ? 'Destilación' : 'Flujo Neto'}
+                                </p>
+                                <ElectreRanking ranking={ranking} metodo={resultsMode} />
+                            </div>
+                        )}
+
+                        {electreResults.length === 0 && ranking.length === 0 && (
                             <div className="bg-gray-800 rounded-lg p-6 text-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 mx-auto text-gray-500 mb-3">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />

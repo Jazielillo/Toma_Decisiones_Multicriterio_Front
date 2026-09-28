@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { actualizarValoresMatriz, calcularElectreFlujoNeto, calcularElectreDestilacion, completarMatriz, reinicializarMatriz, type CeldaMatrizExtendida, type UpdateCeldaMatriz, type Alternativa, type Criterio } from "../../api/matriz";
+import { actualizarValoresMatriz, calcularElectreFlujoNeto, calcularElectreDestilacion, completarMatriz, reinicializarMatriz, type CeldaMatrizExtendida, type UpdateCeldaMatriz, type Alternativa, type Criterio, type ResultadoRanking } from "../../api/matriz";
 import { getIdScenarioLocalStorage } from "../../helpers";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import StepNavigation from "../../Components/StepNavigation";
+import ElectreRanking from "../../Components/ElectreRanking";
 
 export default function ValueMatrix() {
     const router = useNavigate();
@@ -11,7 +14,9 @@ export default function ValueMatrix() {
     const [alternativas, setAlternativas] = useState<Alternativa[]>([]);
     const [criterios, setCriterios] = useState<Criterio[]>([]);
     const [loading, setLoading] = useState(false);
-    const [electreResults, setElectreResults] = useState<string[]>([]);
+    const [electreResults, setElectreResults] = useState<ResultadoRanking[]>([]);
+    // Método con el que se calcularon los resultados mostrados
+    const [resultsMode, setResultsMode] = useState<'destilacion' | 'flujo'>('destilacion');
     const [calculatingResults, setCalculatingResults] = useState(false);
     const [clearingMatrix, setClearingMatrix] = useState(false);
     const [calculationMode, setCalculationMode] = useState<'destilacion' | 'flujo'>('destilacion');
@@ -124,8 +129,13 @@ export default function ValueMatrix() {
                 results = await calcularElectreFlujoNeto();
             }
             setElectreResults(results);
+            setResultsMode(calculationMode);
         } catch (error) {
             console.error(`Error calculating ELECTRE results by ${calculationMode}:`, error);
+            toast.error('No se pudieron calcular los resultados. Revisa que la matriz, los pesos y los umbrales estén completos.', {
+                position: "bottom-right",
+                autoClose: 4000,
+            });
         } finally {
             setCalculatingResults(false);
         }
@@ -226,28 +236,14 @@ export default function ValueMatrix() {
             {/* Header */}
             <div className="mb-6 md:mb-8">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">Matriz Valuada</h1>
-                <p className="text-gray-400 text-sm md:text-base">
-                    Escenario: {currentScenarioId ? `ID: ${currentScenarioId}` : 'No seleccionado'}
-                </p>
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex flex-wrap gap-2 md:gap-3 mb-6">
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-2 md:px-4 md:py-2 text-white text-sm md:text-base transition-colors flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                    </svg>
-                    Pesos
-                </button>
-                <button className="border border-gray-600 hover:bg-gray-800 rounded-md px-3 py-2 md:px-4 md:py-2 text-white text-sm md:text-base transition-colors">
-                    Ir a Informes
-                </button>
-            </div>
+            <StepNavigation />
 
-            {/* Main Content - Responsive Layout */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-                {/* Left Column - Evaluation Matrix */}
-                {/* Left Column - Evaluation Matrix */}
+            {/* Main Content: la matriz ocupa todo el ancho y los resultados van debajo */}
+            <div className="flex flex-col gap-6 lg:gap-8">
+                {/* Evaluation Matrix */}
                 <div className="border border-gray-600 rounded-lg p-4 md:p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-blue-500">
@@ -404,7 +400,7 @@ export default function ValueMatrix() {
                     </div>
                 </div>
 
-                {/* Right Column - ELECTRE III Results */}
+                {/* ELECTRE III Results */}
                 <div className="border border-gray-600 rounded-lg p-4 md:p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-blue-500">
@@ -413,33 +409,20 @@ export default function ValueMatrix() {
                         <h2 className="text-xl md:text-2xl font-bold">Resultados ELECTRE III</h2>
                     </div>
                     <p className="text-gray-400 text-sm md:text-base mb-6">
-                        Clasificación de alternativas según el método ELECTRE III ({calculationMode === 'destilacion' ? 'Destilación' : 'Flujo Neto'}).
+                        Clasificación de alternativas según el método ELECTRE III ({(electreResults.length > 0 ? resultsMode : calculationMode) === 'destilacion' ? 'Destilación' : 'Flujo Neto'}).
                     </p>
 
                     {electreResults.length > 0 ? (
-                        <div className="space-y-4">
+                        <div>
                             <h3 className="text-lg font-semibold text-green-400 mb-4">Ranking de Alternativas:</h3>
-                            {electreResults.map((result, index) => (
-                                <div key={index} className="bg-gray-800 border border-gray-600 rounded-lg p-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-medium">{index + 1}. {result}</span>
-                                        <div className="flex items-center">
-                                            {index === 0 && (
-                                                <span className="bg-green-600 text-white px-2 py-1 rounded text-sm">
-                                                    Mejor opción
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                            <ElectreRanking ranking={electreResults} metodo={resultsMode} />
                         </div>
                     ) : (
                         /* No Results State */
                         <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
                             <div className="mb-4">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="w-12 h-12 mx-auto text-gray-500">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125-.504 1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
                                 </svg>
                             </div>
                             <h3 className="text-lg font-semibold text-gray-300 mb-2">No hay resultados</h3>
@@ -451,7 +434,7 @@ export default function ValueMatrix() {
                                 onClick={calculateResults}
                                 disabled={calculatingResults}
                             >
-                                {calculatingResults ? 'Calculando...' : 'Ver Informe Completo'}
+                                {calculatingResults ? 'Calculando...' : 'Calcular resultados'}
                             </button>
                         </div>
                     )}

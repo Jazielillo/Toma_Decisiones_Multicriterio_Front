@@ -3,13 +3,28 @@ import { getProjectReport, type ProjectReport, type ScenarioReport } from "../..
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "react-toastify";
+import type { ResultadoRanking } from "../../api/matriz";
+import StepNavigation from "../../Components/StepNavigation";
+import { agruparRanking, formatearScore, mejoresAlternativas } from "../../Components/ElectreRanking";
+
+type ComparisonMode = 'flujo_neto' | 'destilacion';
+
+// Ranking con score y posición de un escenario (vacío si el escenario no tiene resultados)
+const rankingDe = (scenario: ScenarioReport, mode: ComparisonMode): ResultadoRanking[] =>
+  (mode === 'flujo_neto'
+    ? scenario.resultados_electre?.flujo_neto_detalle
+    : scenario.resultados_electre?.destilacion_detalle) ?? [];
+
+// Mejor(es) alternativa(s) de un escenario; los empates se listan juntos
+const ganadorDe = (scenario: ScenarioReport, mode: ComparisonMode): string =>
+  mejoresAlternativas(rankingDe(scenario, mode)).sort().join(', ');
 
 export default function ScenarioComparison() {
   const [reportData, setReportData] = useState<ProjectReport | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedScenarios, setSelectedScenarios] = useState<number[]>([]);
-  const [comparisonMode, setComparisonMode] = useState<'flujo_neto' | 'destilacion'>('flujo_neto');
+  const [comparisonMode, setComparisonMode] = useState<ComparisonMode>('flujo_neto');
   
   // Cargar datos del reporte al montar el componente
   useEffect(() => {
@@ -24,12 +39,9 @@ export default function ScenarioComparison() {
       const data = await getProjectReport();
       setReportData(data);
       
-      // Preseleccionar los primeros dos escenarios si existen
-      if (data.escenarios.length >= 3) {
-        setSelectedScenarios([data.escenarios[0].id, data.escenarios[1].id]);
-      } else if (data.escenarios.length === 1) {
-        setSelectedScenarios([data.escenarios[0].id]);
-      }
+      // Preseleccionar los primeros dos escenarios con resultados si existen
+      const conResultados = data.escenarios.filter(escenario => !escenario.error);
+      setSelectedScenarios(conResultados.slice(0, 2).map(escenario => escenario.id));
       
     } catch (error) {
       console.error("Error loading report:", error);
@@ -48,6 +60,14 @@ export default function ScenarioComparison() {
   };
   
   const toggleScenarioSelection = (scenarioId: number) => {
+    const escenario = reportData?.escenarios.find(e => e.id === scenarioId);
+    if (escenario?.error) {
+      toast.info("Este escenario aún no tiene resultados para comparar", {
+        position: "bottom-right",
+        autoClose: 2000,
+      });
+      return;
+    }
     if (selectedScenarios.includes(scenarioId)) {
       setSelectedScenarios(selectedScenarios.filter(id => id !== scenarioId));
     } else {
@@ -66,7 +86,7 @@ export default function ScenarioComparison() {
   // Obtener escenarios seleccionados completos
   const getSelectedScenariosData = (): ScenarioReport[] => {
     if (!reportData) return [];
-    return reportData.escenarios.filter(scenario => selectedScenarios.includes(scenario.id));
+    return reportData.escenarios.filter(scenario => selectedScenarios.includes(scenario.id) && !scenario.error);
   };
   
   // Obtener todas las alternativas únicas de los escenarios seleccionados
@@ -75,8 +95,8 @@ export default function ScenarioComparison() {
     const allAlternatives = new Set<string>();
     
     selectedScenariosData.forEach(scenario => {
-      scenario.resultados_electre[comparisonMode].forEach(alt => {
-        allAlternatives.add(alt);
+      rankingDe(scenario, comparisonMode).forEach(({ alternativa }) => {
+        allAlternatives.add(alternativa);
       });
     });
     
@@ -162,6 +182,8 @@ export default function ScenarioComparison() {
           Compara los resultados de diferentes escenarios del proyecto {reportData.proyecto.title}
         </p>
       </div>
+
+      <StepNavigation />
       
       {/* Scenarios Selection */}
       <div className="border border-gray-600 rounded-lg p-6 mb-6">
@@ -199,9 +221,15 @@ export default function ScenarioComparison() {
                 <span className="text-xs text-gray-400">
                   {formatDate(escenario.updated_at)}
                 </span>
-                <span className="bg-gray-700 text-xs px-2 py-1 rounded">
-                  λ = {escenario.corte}
-                </span>
+                {escenario.error ? (
+                  <span className="bg-yellow-900/40 text-yellow-300 text-xs px-2 py-1 rounded">
+                    Sin resultados
+                  </span>
+                ) : (
+                  <span className="bg-gray-700 text-xs px-2 py-1 rounded">
+                    λ = {escenario.corte}
+                  </span>
+                )}
               </div>
             </div>
           ))}
@@ -278,8 +306,8 @@ export default function ScenarioComparison() {
                 </tr>
               </thead>
               <tbody>
-                {/* Mostrar hasta 10 posiciones como máximo */}
-                {Array.from({ length: Math.min(10, Math.max(...selectedScenariosData.map(s => s.resultados_electre[comparisonMode].length))) }, (_, index) => (
+                {/* Mostrar hasta 10 posiciones como máximo; las alternativas empatadas comparten posición */}
+                {Array.from({ length: Math.min(10, Math.max(...selectedScenariosData.map(s => agruparRanking(rankingDe(s, comparisonMode)).length))) }, (_, index) => (
                   <tr key={index} className={`hover:bg-gray-800/50 transition-colors ${index === 0 ? 'bg-blue-900/20' : ''}`}>
                     <td className="p-3 border border-gray-600">
                       <div className="flex items-center gap-2">
@@ -294,17 +322,26 @@ export default function ScenarioComparison() {
                       </div>
                     </td>
                     
-                    {selectedScenariosData.map(scenario => (
-                      <td key={`${scenario.id}-rank-${index}`} className="p-3 text-center border border-gray-600">
-                        {scenario.resultados_electre[comparisonMode][index] ? (
-                          <span className={`font-medium ${index === 0 ? 'text-yellow-400' : ''}`}>
-                            {scenario.resultados_electre[comparisonMode][index]}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </td>
-                    ))}
+                    {selectedScenariosData.map(scenario => {
+                      const grupo = agruparRanking(rankingDe(scenario, comparisonMode))[index];
+                      return (
+                        <td key={`${scenario.id}-rank-${index}`} className="p-3 text-center border border-gray-600">
+                          {grupo ? (
+                            <div>
+                              <span className={`font-medium ${index === 0 ? 'text-yellow-400' : ''}`}>
+                                {grupo.alternativas.join(', ')}
+                              </span>
+                              <div className="text-xs text-gray-400">
+                                Score: {formatearScore(grupo.score)}
+                                {grupo.alternativas.length > 1 && ' (empate)'}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500">-</span>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
@@ -337,8 +374,8 @@ export default function ScenarioComparison() {
                 <tbody>
                   {uniqueAlternatives.map(alternative => {
                     const positions = selectedScenariosData.map(scenario => {
-                      const position = scenario.resultados_electre[comparisonMode].indexOf(alternative);
-                      return position === -1 ? null : position + 1;
+                      const resultado = rankingDe(scenario, comparisonMode).find(r => r.alternativa === alternative);
+                      return resultado ? resultado.posicion : null;
                     });
                     
                     const validPositions = positions.filter((pos): pos is number => pos !== null);
@@ -535,7 +572,7 @@ export default function ScenarioComparison() {
                         <div>
                           <div className="text-xs text-gray-400">{scenario.name}</div>
                           <div className="font-medium">
-                            {scenario.resultados_electre.flujo_neto[0] || "No disponible"}
+                            {ganadorDe(scenario, 'flujo_neto') || "No disponible"}
                           </div>
                         </div>
                       </div>
@@ -557,7 +594,7 @@ export default function ScenarioComparison() {
                         <div>
                           <div className="text-xs text-gray-400">{scenario.name}</div>
                           <div className="font-medium">
-                            {scenario.resultados_electre.destilacion[0] || "No disponible"}
+                            {ganadorDe(scenario, 'destilacion') || "No disponible"}
                           </div>
                         </div>
                       </div>
@@ -572,7 +609,7 @@ export default function ScenarioComparison() {
                 
                 {/* Flujo Neto Consensus */}
                 {(() => {
-                  const flowWinners = selectedScenariosData.map(s => s.resultados_electre.flujo_neto[0]).filter(Boolean);
+                  const flowWinners = selectedScenariosData.map(s => ganadorDe(s, 'flujo_neto')).filter(Boolean);
                   const uniqueFlowWinners = [...new Set(flowWinners)];
                   const flowConsensus = flowWinners.length > 0 && uniqueFlowWinners.length === 1;
                   
@@ -593,7 +630,7 @@ export default function ScenarioComparison() {
                         <span className="text-sm">Flujo Neto: </span>
                         {flowConsensus ? (
                           <span className="text-green-400">
-                            Todos los escenarios coinciden en que <strong>{uniqueFlowWinners[0]}</strong> es la mejor alternativa.
+                            Todos los escenarios coinciden en que <strong>{uniqueFlowWinners[0]}</strong> {uniqueFlowWinners[0].includes(', ') ? 'son las mejores alternativas' : 'es la mejor alternativa'}.
                           </span>
                         ) : (
                           <span className="text-red-400">
@@ -608,7 +645,7 @@ export default function ScenarioComparison() {
                 
                 {/* Destilacion Consensus */}
                 {(() => {
-                  const destilWinners = selectedScenariosData.map(s => s.resultados_electre.destilacion[0]).filter(Boolean);
+                  const destilWinners = selectedScenariosData.map(s => ganadorDe(s, 'destilacion')).filter(Boolean);
                   const uniqueDestilWinners = [...new Set(destilWinners)];
                   const destilConsensus = destilWinners.length > 0 && uniqueDestilWinners.length === 1;
                   
@@ -629,7 +666,7 @@ export default function ScenarioComparison() {
                         <span className="text-sm">Destilación: </span>
                         {destilConsensus ? (
                           <span className="text-green-400">
-                            Todos los escenarios coinciden en que <strong>{uniqueDestilWinners[0]}</strong> es la mejor alternativa.
+                            Todos los escenarios coinciden en que <strong>{uniqueDestilWinners[0]}</strong> {uniqueDestilWinners[0].includes(', ') ? 'son las mejores alternativas' : 'es la mejor alternativa'}.
                           </span>
                         ) : (
                           <span className="text-red-400">
@@ -656,8 +693,8 @@ export default function ScenarioComparison() {
               <ul className="space-y-2 text-sm">
                 {/* Generar recomendaciones dinámicamente basadas en el análisis */}
                 {(() => {
-                  const flowWinners = selectedScenariosData.map(s => s.resultados_electre.flujo_neto[0]).filter(Boolean);
-                  const destilWinners = selectedScenariosData.map(s => s.resultados_electre.destilacion[0]).filter(Boolean);
+                  const flowWinners = selectedScenariosData.map(s => ganadorDe(s, 'flujo_neto')).filter(Boolean);
+                  const destilWinners = selectedScenariosData.map(s => ganadorDe(s, 'destilacion')).filter(Boolean);
                   const uniqueFlowWinners = [...new Set(flowWinners)];
                   const uniqueDestilWinners = [...new Set(destilWinners)];
                   const flowConsensus = flowWinners.length > 0 && uniqueFlowWinners.length === 1;
@@ -673,7 +710,7 @@ export default function ScenarioComparison() {
                           <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
                         </svg>
                         <span>
-                          Hay un fuerte consenso en todos los escenarios: <strong>{uniqueFlowWinners[0]}</strong> es claramente la mejor alternativa
+                          Hay un fuerte consenso en todos los escenarios: <strong>{uniqueFlowWinners[0]}</strong> {uniqueFlowWinners[0].includes(', ') ? 'son claramente las mejores alternativas' : 'es claramente la mejor alternativa'}
                           según ambos métodos. Esta es una recomendación muy robusta.
                         </span>
                       </li>
@@ -718,7 +755,7 @@ export default function ScenarioComparison() {
                   
                   // Si hay pocas alternativas en común
                   const alternativeSets = selectedScenariosData.map(s => 
-                    new Set([...s.resultados_electre.flujo_neto, ...s.resultados_electre.destilacion])
+                    new Set([...rankingDe(s, 'flujo_neto'), ...rankingDe(s, 'destilacion')].map(r => r.alternativa))
                   );
                   
                   if (alternativeSets.length >= 2) {
